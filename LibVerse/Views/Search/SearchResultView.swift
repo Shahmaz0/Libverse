@@ -8,35 +8,45 @@
 import SwiftUI
 
 struct SearchResultView: View {
-    let books = Array(0..<10)
+    let searchText: String
+    let selectedCategory: String?
+    @ObservedObject var dataController: DataController
+    
+    // Computed property to filter books
+    var filteredBooks: [Book] {
+        dataController.books.filter { book in
+            let matchesSearchText = searchText.isEmpty ||
+                book.title.localizedCaseInsensitiveContains(searchText) ||
+            book.author.contains{$0.localizedCaseInsensitiveContains(searchText)}
+            
+            let matchesCategory = selectedCategory == nil ||
+            book.genre == selectedCategory
+            
+            return matchesSearchText && matchesCategory
+        }
+    }
     
     var body: some View {
         NavigationView {
-            ScrollViewReader { scrollProxy in
-                ScrollView {
-                    VStack {
-                        ForEach(books.reversed(), id: \.self) { index in
-                            BookCard(
-                                title: "The Great Gatsby",
-                                author: "F. Scott Fitzgerald",
-                                description: "Nick Carraway, a young man from Minnesota, moves to New York in the summer of the 1922 to learn about the bond business. He rents house in the West Egg district of Long Island, a wealthy but unfashionable area populated by the new rich, a group who ..."
-                            )
-                            .padding()
-                        }
+            ScrollView {
+                VStack {
+                    // Use the filteredBooks property
+                    ForEach(filteredBooks, id: \.id) { book in
+                        BookCard(
+                            BookImage: book.imageLink,
+                            title: book.title,
+                            author: book.author.joined(separator: ", "),
+                            description: book.Description
+                        )
+                        .padding()
                     }
-                    .background(Color(red: 252/255, green: 240/255, blue: 218/255))
                 }
-                .navigationTitle("Book List")
-                .navigationBarTitleDisplayMode(.large)
-                .navigationBarHidden(true)
-                .onAppear {
-                }
+                .background(Color(red: 252/255, green: 240/255, blue: 218/255))
             }
+            .navigationTitle("Search Results")
+            .navigationBarTitleDisplayMode(.large)
+            .navigationBarHidden(true)
         }
-        .background(Color(red: 252/255, green: 240/255, blue: 218/255)) // Background color for the whole page
+        .background(Color(red: 252/255, green: 240/255, blue: 218/255))
     }
-}
-
-#Preview {
-    SearchResultView()
 }

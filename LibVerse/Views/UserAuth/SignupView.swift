@@ -145,7 +145,7 @@ struct SignUpView: View {
                 
                 DispatchQueue.main.async {
                     isLoading = false
-                    if authResponse.user != nil {
+                    if authResponse.user == nil {
                         navigateToOTP = true
                     } else {
                         alertMessage = "An error occurred during signup."

@@ -49,7 +49,7 @@ struct TabBarView: View {
                 }
                 .tag(3)
         }
-        .tint(.orange)
+        .tint(Color(red:255/255, green: 111/255, blue: 45/255))
         .onAppear {
             // Set the tab bar background color
             let appearance = UITabBarAppearance()
@@ -114,7 +114,7 @@ struct HomeView: View {
                         }
                         
                         Spacer()
-                        
+
                         Text("Libverse")
                             .font(.largeTitle)
                             .bold()
@@ -131,7 +131,6 @@ struct HomeView: View {
                 }
                 .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             }
-            .navigationBarHidden(true)
         }
     }
     
