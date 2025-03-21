@@ -98,7 +98,8 @@ struct SignUpView: View {
             OTPVerificationView(email: collegeEmail, password: password)
         }
     }
-    
+
+    // Rest of the file remains the same
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {
         ZStack(alignment: .leading) {
             if text.wrappedValue.isEmpty {
@@ -145,7 +146,7 @@ struct SignUpView: View {
                 
                 DispatchQueue.main.async {
                     isLoading = false
-                    if authResponse.user == nil {
+                    if authResponse.user != nil {
                         navigateToOTP = true
                     } else {
                         alertMessage = "An error occurred during signup."

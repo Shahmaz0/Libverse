@@ -56,6 +56,7 @@ class SupabaseManager: ObservableObject {
             self.currentUser = session.user
             self.currentSession = session
         }
+        
         print("User ID: \(session.user.id)")
         return session
     }
@@ -80,8 +81,74 @@ class SupabaseManager: ObservableObject {
         }
     }
     
-    func resetPassword(email: String) async throws {
-        try await client.auth.resetPasswordForEmail(email)
-        print("Password reset email sent to \(email)")
+    func verifyLoginOTP(email: String, otp: String) async throws -> Session {
+            let response = try await client.auth.verifyOTP(
+                email: email,
+                token: otp,
+                type: .email
+            )
+            
+            // If OTP is verified, complete login with stored credentials
+            if let storedPassword = UserDefaults.standard.string(forKey: "pendingLoginPassword") {
+                let session = try await client.auth.signIn(email: email, password: storedPassword)
+                
+                // Clear stored credentials
+                UserDefaults.standard.removeObject(forKey: "pendingLoginEmail")
+                UserDefaults.standard.removeObject(forKey: "pendingLoginPassword")
+                
+                DispatchQueue.main.async {
+                    self.currentUser = session.user
+                    self.currentSession = session
+                }
+                
+                return session
+            } else {
+                throw NSError(domain: "Login", code: -1, userInfo: [NSLocalizedDescriptionKey: "Login credentials not found"])
+            }
+        }
+    
+    func verifyPasswordReset(token: String, newPassword: String) async throws {
+        // First verify the token
+        let session = try await client.auth.verifyOTP(
+            email: currentUser?.email ?? "",
+            token: token,
+            type: .recovery
+        )
+        
+        // If session is valid, update the password
+        if session.user != nil {
+            try await client.auth.update(user: UserAttributes(
+                password: newPassword
+            ))
+        } else {
+            throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid token"])
+        }
     }
+    
+    func updatePassword(email: String, newPassword: String) async throws {
+        // First verify the OTP
+        if let otp = UserDefaults.standard.string(forKey: "resetOTP") {
+            let session = try await client.auth.verifyOTP(
+                email: email,
+                token: otp,
+                type: .recovery
+            )
+            
+            // If OTP is verified, update the password
+            if session.user != nil {
+                try await client.auth.update(user: UserAttributes(password: newPassword))
+                // Clear the OTP after successful update
+                UserDefaults.standard.removeObject(forKey: "resetOTP")
+            } else {
+                throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid OTP"])
+            }
+        } else {
+            throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "OTP not found"])
+        }
+    }
+    
+    func resetPasswordForEmail(_ email: String) async throws {
+        try await client.auth.resetPasswordForEmail(email)
+    }
+    
 }

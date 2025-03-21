@@ -19,6 +19,7 @@ struct UserNewPasswordView: View {
     @Binding var showUserInitialView: Bool
     @State private var showNewPassword = false
     @State private var showConfirmPassword = false
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
@@ -51,7 +52,7 @@ struct UserNewPasswordView: View {
                 
                 Button(action: {
                     Task {
-                        await resetPassword()
+                        await forgotPassword()
                     }
                 }) {
                     if isLoading {
@@ -83,6 +84,7 @@ struct UserNewPasswordView: View {
                 )
             }
         }
+        .navigationBarBackButtonHidden(true)
         .onTapGesture {
             hideKeyboard()
         }
@@ -120,17 +122,19 @@ struct UserNewPasswordView: View {
         }
     }
     
-    private func resetPassword() async {
+    private func forgotPassword() async {
         if newPassword.isEmpty || confirmPassword.isEmpty {
             alertMessage = "Please fill in both password fields"
             showAlert = true
             return
         }
+        
         if newPassword != confirmPassword {
             alertMessage = "Passwords do not match"
             showAlert = true
             return
         }
+        
         if newPassword.count < 8 {
             alertMessage = "Password must be at least 8 characters long"
             showAlert = true
@@ -138,24 +142,35 @@ struct UserNewPasswordView: View {
         }
         
         isLoading = true
-//        if let userID = UserDefaults.standard.string(forKey: "currentUserID") {
-//            do {
-//                let success = try await dataController.updateUserPassword(userID: userID, newPassword: newPassword)
-//                isLoading = false
-//                if success {
-//                    dismiss()
-//                    showUserInitialView = true
-//                }
-//            } catch {
-//                isLoading = false
-//                alertMessage = "Failed to update password. Please try again."
-//                showAlert = true
-//            }
-//        } else {
-//            isLoading = false
-//            alertMessage = "Error: User ID not found"
-//            showAlert = true
-//        }
+        
+        do {
+            // Get email from UserDefaults
+            if let email = UserDefaults.standard.string(forKey: "resetEmail") {
+                try await SupabaseManager.shared.updatePassword(email: email, newPassword: newPassword)
+                
+                DispatchQueue.main.async {
+                    // Clear stored email
+                    UserDefaults.standard.removeObject(forKey: "resetEmail")
+                    
+                    alertMessage = "Password updated successfully!"
+                    showAlert = true
+                    dismiss()
+                    // Navigate to login page
+                    showUserInitialView = false
+                    showMainApp = false
+                }
+            } else {
+                alertMessage = "Error: Email not found for password reset"
+                showAlert = true
+            }
+        } catch {
+            DispatchQueue.main.async {
+                alertMessage = "Failed to update password: \(error.localizedDescription)"
+                showAlert = true
+            }
+        }
+        
+        isLoading = false
     }
     
     private func hideKeyboard() {

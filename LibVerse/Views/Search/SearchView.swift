@@ -39,14 +39,14 @@ struct SearchView: View {
                     // Orange section with search at top
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Search")
-                            .font(.custom("Menlo-Bold", size: 24))
+                            .font(.custom("sfprodisplaymedium", size: 28))
                             .padding(.horizontal)
                         
                         HStack(spacing: 0) {
                             TextField("Title, author, host, or topic", text: $searchText)
                                 .padding()
                                 .frame(width: 300, height: 59)
-                                .font(.custom("Menlo", size: 15))
+                                .font(.custom("sfprodisplaymedium", size: 18))
                                 .background(Color(.systemBackground))
                                 .cornerRadius(0)
                                 .overlay(
@@ -90,7 +90,7 @@ struct SearchView: View {
                                             .foregroundColor(.black)
                                             .frame(width: 24, height: 24)
                                         Text(category)
-                                            .font(.custom("Menlo", size: 15))
+                                            .font(.custom("sfprodisplaymedium", size: 15))
                                         Spacer()
                                     }
                                     .padding(.vertical, 16)
@@ -116,10 +116,10 @@ struct SearchView: View {
                         ForEach(dataController.suggestions, id: \.id) { book in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(book.title)
-                                    .font(.custom("Menlo", size: 16))
+                                    .font(.custom("sfprodisplaymedium", size: 16))
                                     .fontWeight(.bold)
                                 Text("by \(book.author.joined(separator: ", "))")
-                                    .font(.custom("Menlo", size: 14))
+                                    .font(.custom("sfprodisplaymedium", size: 14))
                                     .foregroundColor(.gray)
                             }
                             .padding(.vertical, 8)
@@ -132,7 +132,7 @@ struct SearchView: View {
                             }
                         }
                     }
-                    .frame(width: 375)
+                    .frame(width: 450)
                     .background(Color.white)
                     .cornerRadius(8)
                     .shadow(radius: 4)
