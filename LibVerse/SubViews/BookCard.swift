@@ -1,7 +1,5 @@
 import SwiftUI
 
-import SwiftUI
-
 struct BookCard: View {
     let BookImage: String // This is a URL string
     let title: String
@@ -10,20 +8,19 @@ struct BookCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 16) {
+            HStack(alignment: .center, spacing: 16) { // Align content vertically
+                // Image container with fixed size and left padding
                 ZStack {
                     // Rectangle border
                     Rectangle()
-                        .stroke(Color.black, lineWidth: 1.5)
-                        .frame(width: 88, height: 135)
+                        .stroke(Color.black, lineWidth: 0.5)
+                        .frame(width: 44, height: 59)
                     
-                    // Load image from URL using AsyncImage
                     if BookImage.isEmpty {
-                        // Fallback image if URL is empty
-                        Image("mvc") // Replace "mvc" with your fallback image name
+                        Image("mvc")
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 87, height: 135)
+                            .frame(width: 40, height: 55)
                             .clipped()
                             .background(Color.white)
                     } else {
@@ -31,18 +28,18 @@ struct BookCard: View {
                             switch phase {
                             case .empty:
                                 ProgressView() // Show a loading indicator
-                                    .frame(width: 87, height: 135)
+                                    .frame(width: 40, height: 55)
                             case .success(let image):
                                 image
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 87, height: 135)
+                                    .frame(width: 40, height: 55)
                                     .clipped()
                             case .failure:
                                 Image("mvc") // Fallback image if URL fails to load
                                     .resizable()
                                     .scaledToFill()
-                                    .frame(width: 87, height: 135)
+                                    .frame(width: 40, height: 55)
                                     .clipped()
                             @unknown default:
                                 EmptyView()
@@ -50,65 +47,56 @@ struct BookCard: View {
                         }
                     }
                 }
+                .frame(width: 44, height: 59) // Fixed size for the image container
+                .padding(.leading, 35) // Add 10-point gap from the left edge
                 
-                // Book details
-                VStack(alignment: .leading, spacing: 4) {
+                // Text content (title, author, description)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.custom("Menlo", size: 16))
+                        .font(.custom("sfpro", size: 14))
+                        .lineLimit(1) // Ensure title doesn't wrap
                     
                     Text("By \(author)")
-                        .font(.custom("Menlo", size: 12))
+                        .font(.custom("sfpro", size: 10))
+                        .foregroundColor(Color(.systemGray))
                         .italic()
-                        .foregroundColor(.black)
+                        .lineLimit(1) // Ensure author doesn't wrap
                     
-                    Spacer().frame(height: 8)
+                    Spacer().frame(height: 5)
                     
                     Text(description)
-                        .font(.custom("Menlo", size: 10))
+                        .font(.custom("sfpro", size: 10))
                         .foregroundColor(.black)
-                        .lineLimit(7)
+                        .lineLimit(2) // Limit description to 2 lines
                         .multilineTextAlignment(.leading)
+                        .frame(width: 265, alignment: .leading) // Fixed width for description
                 }
                 .padding(.vertical, 8)
                 
-                Spacer()
+                // Chevron icon
+                Spacer() // Push the chevron to the trailing edge
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.black)
+                    .padding(.trailing, 35)
             }
-            .padding(.horizontal, 16)
-            
-            // Reserve button
-            HStack {
-                Spacer()
-                Button(action: {
-                    print("Reserve button tapped")
-                }) {
-                    Text("Reserve")
-                        .frame(width: 345, height: 49)
-                        .background(Color(red: 255/255, green: 111/255, blue: 49/255))
-                        .foregroundColor(.white)
-                        .font(.headline)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 0)
-                                .stroke(Color.black, lineWidth: 1.25)
-                        )
-                }
-                Spacer()
-            }
-            .padding(.top, 16)
+            .frame(height: 80) // Ensure the HStack has a fixed height
         }
-        .frame(width: 404, height: 250)
+        .frame(width: 393, height: 80, alignment: .center)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .cornerRadius(0)
         .shadow(color: .black.opacity(0.5), radius: 0, x: 0, y: 1)
-        .navigationBarTitleDisplayMode(.inline)
     }
-}// Preview
+}
+
+
+// Preview
 struct BookCard_Previews: PreviewProvider {
     static var previews: some View {
         BookCard(
             BookImage: "",
-            title: "The Great Gatsby",
+            title: "Great Gatsby",
             author: "F. Scott Fitzgerald",
-            description: "Nick Carraway, a young man from Minnesota, moves to New York in the summer of the 1922 to learn about the bond business. He rents house in the West Egg district of Long Island, a wealthy but unfashionable area populated by the new rich, a group who ..."
+            description: "Nick Carraway, a young man from Minnesota,"
         )
         .padding()
     }

@@ -74,7 +74,8 @@ struct SignUpView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(isFormValid ? Color(red: 255/255, green: 111/255, blue: 45/255) : Color.gray)
-                                .foregroundColor(.white)
+                                .foregroundColor(.black)
+                                .border(.black)
                         }
                     }
                     .disabled(!isFormValid || isLoading)

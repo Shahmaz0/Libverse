@@ -8,45 +8,63 @@
 import SwiftUI
 
 struct SearchResultView: View {
-    let searchText: String
-    let selectedCategory: String?
+    @Binding var searchText: String
+    var selectedCategory: String?
     @ObservedObject var dataController: DataController
     
-    // Computed property to filter books
-    var filteredBooks: [Book] {
-        dataController.books.filter { book in
-            let matchesSearchText = searchText.isEmpty ||
-                book.title.localizedCaseInsensitiveContains(searchText) ||
-            book.author.contains{$0.localizedCaseInsensitiveContains(searchText)}
-            
-            let matchesCategory = selectedCategory == nil ||
-            book.genre == selectedCategory
-            
-            return matchesSearchText && matchesCategory
-        }
-    }
-    
     var body: some View {
-        NavigationView {
+        VStack(spacing: 0) {
+            // Search Bar
+            HStack(spacing: 0) {
+                TextField("Search by Title or author", text: $searchText)
+                    .padding()
+                    .frame(height: 40)
+                    .font(.custom("sfprodisplaymedium", size: 15))
+                    .background(Color(red: 255/255, green: 243/255, blue: 230/255))
+                    .cornerRadius(0)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color.black, lineWidth: 1.25)
+                    )
+                    .onChange(of: searchText) { _ in
+                        dataController.updateSuggestions(for: searchText)
+                    }
+                
+                Button(action: {}) {
+                    HStack {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    .frame(width: 30, height: 40)
+                    .padding(.horizontal, 16)
+                    .background(Color(red: 255/255, green: 243/255, blue: 230/255))
+                    .foregroundColor(.black)
+                    .cornerRadius(0)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color.black, lineWidth: 1.25)
+                    )
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 20)
+            
+            // Search Results
             ScrollView {
-                VStack {
-                    // Use the filteredBooks property
-                    ForEach(filteredBooks, id: \.id) { book in
+                VStack(spacing: 0) {
+                    ForEach(dataController.suggestions, id: \.id) { book in
                         BookCard(
                             BookImage: book.imageLink,
                             title: book.title,
                             author: book.author.joined(separator: ", "),
                             description: book.Description
                         )
-                        .padding()
+                        .padding(.vertical, 8)
                     }
                 }
-                .background(Color(red: 252/255, green: 240/255, blue: 218/255))
             }
-            .navigationTitle("Search Results")
-            .navigationBarTitleDisplayMode(.large)
-            .navigationBarHidden(true)
+            .background(Color(red: 255/255, green: 243/255, blue: 230/255))
         }
-        .background(Color(red: 252/255, green: 240/255, blue: 218/255))
+        .navigationBarTitle("Search", displayMode: .inline)
+        .background(Color(red: 255/255, green: 243/255, blue: 230/255))
     }
 }

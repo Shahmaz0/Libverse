@@ -240,8 +240,9 @@ struct PopularCard: View {
         .frame(width: 180)
     }
 }
+
 // MARK: - Other Views
-//
+
 struct MyShelfView: View {
     var body: some View {
         Text("MyShelf View")

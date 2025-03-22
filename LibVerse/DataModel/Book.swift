@@ -22,3 +22,5 @@ struct Book: Identifiable, Codable, Hashable {
     let publisher: String
     let imageLink: String
 }
+
+
