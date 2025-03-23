@@ -52,6 +52,14 @@ class SupabaseManager: ObservableObject {
     
     func signIn(email: String, password: String) async throws -> Session {
         let session = try await client.auth.signIn(email: email, password: password)
+        try await client.auth.signOut() // Sign out temporarily to force OTP
+                try await client.auth.signInWithOTP(email: email)
+                
+                // Store email for OTP verification
+                UserDefaults.standard.set(email, forKey: "pendingLoginEmail")
+                UserDefaults.standard.set(password, forKey: "pendingLoginPassword")
+                
+        
         DispatchQueue.main.async {
             self.currentUser = session.user
             self.currentSession = session
@@ -107,6 +115,8 @@ class SupabaseManager: ObservableObject {
             }
         }
     
+   
+
     func verifyPasswordReset(token: String, newPassword: String) async throws {
         // First verify the token
         let session = try await client.auth.verifyOTP(

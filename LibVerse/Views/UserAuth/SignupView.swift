@@ -74,8 +74,7 @@ struct SignUpView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(isFormValid ? Color(red: 255/255, green: 111/255, blue: 45/255) : Color.gray)
-                                .foregroundColor(.black)
-                                .border(.black)
+                                .foregroundColor(.white)
                         }
                     }
                     .disabled(!isFormValid || isLoading)
@@ -99,8 +98,7 @@ struct SignUpView: View {
             OTPVerificationView(email: collegeEmail, password: password)
         }
     }
-
-    // Rest of the file remains the same
+    
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {
         ZStack(alignment: .leading) {
             if text.wrappedValue.isEmpty {

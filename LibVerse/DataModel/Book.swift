@@ -16,11 +16,11 @@ struct Book: Identifiable, Codable, Hashable {
     let totalCopies: Int
     let availableCopies: Int
     let ISBN: String
-    let Description: String
-    let shelfLocation: String
-    let dateAdded: String
-    let publisher: String
-    let imageLink: String
+    let Description: String?
+    let shelfLocation: String?
+    let dateAdded: String?
+    let publisher: String?
+    let imageLink: String?
 }
 
 

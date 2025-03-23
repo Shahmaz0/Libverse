@@ -42,12 +42,12 @@ struct TabBarView: View {
                 }
                 .tag(2)
             
-            MyBookView()
-                .tabItem {
-                    Image(systemName: "book.fill")
-                    Text("MyBook")
-                }
-                .tag(3)
+//            MyBookView()
+//                .tabItem {
+//                    Image(systemName: "book.fill")
+//                    Text("MyBook")
+//                }
+//                .tag(3)
         }
         .tint(Color(red:255/255, green: 111/255, blue: 45/255))
         .onAppear {
@@ -75,61 +75,118 @@ struct HomeView: View {
         NavigationView {
             ZStack(alignment: .top) {
                 ScrollView {
-                    // Padding to push content below the fixed header
-                    VStack(alignment: .leading, spacing: 5) {
-                        Color.clear.frame(height: 50) // Reduced from 120 to 80
-
-                        // Popular Section 1
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionHeader(title: "Popular")
-                            horizontalBookScroll()
-                        }
-                        
-                        // Popular Section 2
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionHeader(title: "Popular")
-                            horizontalBookScroll()
-                        }
-                        
-                        // Recently Added
-                        VStack(alignment: .leading, spacing: 10) {
-                            sectionHeader(title: "Recently Added")
-                            horizontalBookScroll()
-                        }
-                    }
-                    .padding(.vertical)
+                    
+//                    Spacer().frame(height: 20)
+//                    VStack(alignment: .leading, spacing: 5) {
+//                        Color.clear.frame(height: 50)
+//
+//                        VStack(alignment: .leading, spacing: 10) {
+//                            sectionHeader(title: "Popular")
+//                            horizontalBookScroll()
+//                        }
+//                        
+//                    }
+//                    .padding(.vertical)
                 }
                 .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-
-                // Fixed Header with Title and Alert/Profile
-                VStack(spacing: 8) {
-                    HStack {
-                        Button(action: {
-                            // Alert button action
-                        }) {
-                            Image(systemName: "bell.fill")
-                                .resizable()
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(.orange)
-                        }
+                
+                HStack(spacing: 0) {
+                    
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(width: 65, height: 65)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.trailing, -1),
+                            alignment: .trailing
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                    
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(maxWidth: .infinity, maxHeight: 65)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.leading, -1),
+                            alignment: .leading
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.trailing, -1),
+                            alignment: .trailing
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                        .overlay(
+                            Text("LIBVERSE")
+                                .font(.custom("Charter", size: 23))
+                                .bold()
+                                .foregroundColor(.black)
+                                .padding(.leading, 80),
+                            alignment: .leading
+                        )
+                    
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
                         
-                        Spacer()
-
-                        Text("Libverse")
-                            .font(.largeTitle)
-                            .bold()
+                        .frame(width: 65, height: 65)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.leading, -1),
+                            alignment: .leading
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                       
                         
-                        Spacer()
-                        
-                        Image(systemName: "person.circle.fill")
-                            .resizable()
-                            .frame(width: 40, height: 40)
-                            .foregroundColor(.orange)
-                    }
-                    .padding(.horizontal)
-                    .frame(height: 50)
                 }
-                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                .frame(width: 400)
+                .padding(.horizontal)
             }
         }
     }
@@ -160,50 +217,6 @@ struct HomeView: View {
         }
     }
 }
-// Announcements Section
-//                    VStack(alignment: .leading, spacing: 15) {
-//                        HStack {
-//                            Text("Announcements")
-//                                .font(.title2)
-//                                .bold()
-//                            Spacer()
-//                            Button("See All") {
-//                                // Action
-//                            }
-//                            .foregroundColor(.orange)
-//                            .font(.system(size: 16, weight: .medium))
-//                        }
-//                        .padding(.horizontal)
-//
-//                        ScrollView(.horizontal, showsIndicators: false) {
-//                            HStack(spacing: 15) {
-//                                ForEach(0..<3) { _ in
-//                                    AnnouncementCard()
-//                                }
-//                            }
-//                            .padding(.horizontal)
-//                        }
-//                    }
-
-
-// MARK: - Announcement Card
-//struct AnnouncementCard: View {
-//    var body: some View {
-//        VStack(alignment: .leading, spacing: 10) {
-//            Text("Announcement Title")
-//                .font(.headline)
-//            Text("This is a sample announcement text that describes the important information.")
-//                .font(.subheadline)
-//                .foregroundColor(.gray)
-//                .lineLimit(2)
-//        }
-//        .padding()
-//        .frame(width: 250)
-//        .frame(height: 200)
-//        .background(Color(.systemGray6))
-//        .cornerRadius(12)
-//    }
-//}
 
 // MARK: - Popular Book Card with Black Square Border and Increased Width
 struct PopularCard: View {
