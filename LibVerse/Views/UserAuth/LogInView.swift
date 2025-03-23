@@ -60,11 +60,9 @@ struct LogInView: View {
                             Text("Log In")
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .foregroundColor(.black)
                                 .background(Color(red: 255/255, green: 111/255, blue: 45/255))
                                 .foregroundColor(.white)
-                                .cornerRadius(0)
-                                .border(.black)
+                                .cornerRadius(10)
                         }
                         
                         // Navigation to SignUpView
