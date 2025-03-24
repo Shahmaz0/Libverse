@@ -40,7 +40,7 @@ struct SignUpView: View {
                             .bold()
                             .frame(width: 287, alignment: .center)
                         
-                        Text("Join first to access the feature of Libverse")
+                        Text("Join first to access the feature of Pustakalaya")
                             .font(.custom("Courier", size: 16))
                             .frame(width: 350)
                             .multilineTextAlignment(.center)
