@@ -66,25 +66,28 @@ struct TabBarView: View {
 
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
-    let popularBooks: [PopularBook] = [
-        PopularBook(imageName: "mvc", title: "MVC", author: "R.S. Salaria", rating: 4, isBookmarked: true),
-        PopularBook(imageName: "warandpeace", title: "War and Peace", author: "Leo Tolstoy", rating: 5, isBookmarked: false),
-        PopularBook(imageName: "harrypotter", title: "Harry Potter", author: "J.K. Rowling", rating: 5, isBookmarked: true)
-    ]
+    @StateObject private var viewModel = HomeViewModel()
     
     var body: some View {
             NavigationView {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
-                        horizontalBookScroll()
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding()
+                        } else {
+                            horizontalBookScroll()
+                        }
                     }
                     .padding(.vertical)
                 }
                 .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-                            .navigationTitle("Favourites") // Large title here
-                            .navigationBarTitleDisplayMode(.large) // Makes it large
-                        
-                    
+                .navigationTitle("Favourites") // Large title here
+                .navigationBarTitleDisplayMode(.large) // Makes it large
+                .onAppear {
+                    viewModel.fetchFavoriteBooks()
+                }
                     
                 HStack(spacing: 0) {
                     
@@ -205,7 +208,7 @@ struct HomeView: View {
     func horizontalBookScroll() -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: -35) {
-                ForEach(popularBooks) { book in
+                ForEach(viewModel.popularBooks) { book in
                     PopularCard(book: book)
                 }
             }
@@ -226,25 +229,53 @@ struct PopularCard: View {
                     .stroke(Color.black, lineWidth: 1.5)
                     .frame(width: 120, height: 150)
                 
-                Image(book.imageName)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 115, height: 145)
-                    .clipped()
-                    .background(Color.white)
+                if book.imageName.isEmpty || book.imageName == "default_book" {
+                    Image("mvc")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 115, height: 145)
+                        .clipped()
+                        .background(Color.white)
+                } else {
+                    AsyncImage(url: URL(string: book.imageName)) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(width: 115, height: 145)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 115, height: 145)
+                                .clipped()
+                        case .failure:
+                            Image("mvc")
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 115, height: 145)
+                                .clipped()
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                }
             }
             .padding(.bottom, 2)
             
-            // Book Title
-            Text(book.title)
-                .font(.custom("Charter", size: 14))
-                .lineLimit(2)
-                .frame(width: 160, alignment: .leading)
-            // Author
-            Text(book.author)
-                .font(.custom("Charter", size: 13))
-                .foregroundColor(.gray)
-                .lineLimit(1)
+            // Book Title and Author in a VStack with fixed height
+            VStack(alignment: .leading, spacing: 2) {
+                Text(book.title)
+                    .font(.custom("Charter", size: 14))
+                    .lineLimit(2)
+                    .frame(width: 160, alignment: .leading)
+                
+                Text(book.author)
+                    .font(.custom("Charter", size: 13))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .frame(width: 160, alignment: .leading)
+            }
+            .frame(height: 45) // Fixed height for the text container
         }
         .frame(width: 180)
     }
@@ -267,4 +298,86 @@ struct MyBookView: View {
 // MARK: - Preview
 #Preview {
     HomeView()
+}
+
+// MARK: - HomeViewModel
+class HomeViewModel: ObservableObject {
+    @Published var popularBooks: [PopularBook] = []
+    @Published var isLoading = false
+    @Published var errorMessage: String?
+    private let supabaseManager = SupabaseManager.shared
+    
+    func fetchFavoriteBooks() {
+        guard let currentUser = supabaseManager.currentUser else {
+            // If no user is logged in, show empty state
+            self.popularBooks = []
+            return
+        }
+        
+        isLoading = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                // 1. Fetch the current user's favorite book IDs from Member table
+                let query = supabaseManager.client
+                    .from("Member")
+                    .select()
+                    .eq("id", value: currentUser.id)
+                
+                let members: [Member] = try await query.execute().value
+                
+                guard let member = members.first else {
+                    await MainActor.run {
+                        self.isLoading = false
+                        self.popularBooks = []
+                    }
+                    return
+                }
+                
+                // 2. If the user has favorites, fetch those books
+                if member.favourites.isEmpty {
+                    await MainActor.run {
+                        self.isLoading = false
+                        self.popularBooks = []
+                    }
+                    return
+                }
+                
+                // Convert array of favorite UUID strings to an array of UUIDs for querying
+                let favoriteIds = member.favourites.compactMap { UUID(uuidString: $0) }
+                
+                // 3. Fetch all favorite books at once using the array of UUIDs
+                let bookQuery = supabaseManager.client
+                    .from("Books")
+                    .select()
+                    .in("id", values: favoriteIds)
+                
+                let books: [Book] = try await bookQuery.execute().value
+                
+                // 4. Convert books to PopularBook objects
+                let favoriteBooks = books.map { book in
+                    PopularBook(
+                        imageName: book.imageLink ?? "default_book",
+                        title: book.title,
+                        author: book.author.joined(separator: ", "),
+                        rating: Int.random(in: 3...5),
+                        isBookmarked: true
+                    )
+                }
+                
+                await MainActor.run {
+                    self.popularBooks = favoriteBooks
+                    self.isLoading = false
+                }
+            } catch {
+                print("Error fetching favorite books: \(error)")
+                await MainActor.run {
+                    self.isLoading = false
+                    self.errorMessage = "Failed to load favorite books. Please try again."
+                    self.popularBooks = []
+                }
+            }
+        }
+    }
 }

@@ -309,4 +309,5 @@ struct BookDetailView: View {
         imageLink: "https://books.google.com/books/content?id=hjEFCAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
     )
     return BookDetailView(book: sampleBook)
+        .environmentObject(SupabaseManager.shared)
 }

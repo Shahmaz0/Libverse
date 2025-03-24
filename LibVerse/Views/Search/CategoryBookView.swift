@@ -97,7 +97,7 @@ struct CategoryBooksView: View {
             
             VStack(spacing: 0) {
                 ForEach(filteredBooks) { book in
-                    NavigationLink(destination: BookDetailView(book: book)) {
+                    NavigationLink(destination: BookDetailView(book: book).environmentObject(SupabaseManager.shared)) {
                         BookCard(
                             BookImage: book.imageLink ?? "",
                             title: book.title,

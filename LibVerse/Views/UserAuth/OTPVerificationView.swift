@@ -130,18 +130,47 @@ struct OTPVerificationView: View {
     private func verifyOTP() {
         isLoading = true
         errorMessage = nil
-
-        SupabaseManager.shared.verifyOTP(email: email, otp: otp) { result in
-            DispatchQueue.main.async {
-                isLoading = false
-                switch result {
-                case .success:
-                    withAnimation {
-                        showSuccessMessage = true
+        
+        // Check if this is for login or signup by looking for pendingLoginEmail in UserDefaults
+        let isLoginFlow = UserDefaults.standard.string(forKey: "pendingLoginEmail") != nil
+        
+        Task {
+            do {
+                if isLoginFlow {
+                    // Use verifyLoginOTP for login flow
+                    _ = try await SupabaseManager.shared.verifyLoginOTP(email: email, otp: otp)
+                    
+                    DispatchQueue.main.async {
+                        isLoading = false
+                        withAnimation {
+                            showSuccessMessage = true
+                        }
+                        alertMessage = "Email verified successfully!"
+                        showAlert = true
                     }
-                    alertMessage = "Email verified successfully!"
-                    showAlert = true
-                case .failure(let error):
+                } else {
+                    // Use regular verifyOTP for signup flow
+                    SupabaseManager.shared.verifyOTP(email: email, otp: otp) { result in
+                        DispatchQueue.main.async {
+                            isLoading = false
+                            switch result {
+                            case .success:
+                                withAnimation {
+                                    showSuccessMessage = true
+                                }
+                                alertMessage = "Email verified successfully!"
+                                showAlert = true
+                            case .failure(let error):
+                                errorMessage = error.localizedDescription
+                                alertMessage = "Error: \(error.localizedDescription)"
+                                showAlert = true
+                            }
+                        }
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    isLoading = false
                     errorMessage = error.localizedDescription
                     alertMessage = "Error: \(error.localizedDescription)"
                     showAlert = true
@@ -151,7 +180,24 @@ struct OTPVerificationView: View {
     }
     
     private func resendCode() {
-        alertMessage = "New code has been sent to your email"
-        showAlert = true
+        isLoading = true
+        
+        Task {
+            do {
+                try await SupabaseManager.shared.client.auth.signInWithOTP(email: email)
+                
+                DispatchQueue.main.async {
+                    isLoading = false
+                    alertMessage = "New verification code has been sent to your email"
+                    showAlert = true
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    isLoading = false
+                    alertMessage = "Error sending new code: \(error.localizedDescription)"
+                    showAlert = true
+                }
+            }
+        }
     }
 }
