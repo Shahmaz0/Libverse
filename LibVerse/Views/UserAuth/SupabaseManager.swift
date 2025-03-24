@@ -208,7 +208,7 @@ class SupabaseManager: ObservableObject {
             
             // If OTP is verified, update the password
             if session.user != nil {
-                try await client.auth.update(user: UserAttributes(password: newPassword))
+                try await SupabaseManager.shared.client.auth.update(user: UserAttributes(password: newPassword))
                 // Clear the OTP after successful update
                 UserDefaults.standard.removeObject(forKey: "resetOTP")
             } else {
@@ -220,7 +220,7 @@ class SupabaseManager: ObservableObject {
     }
     
     func resetPasswordForEmail(_ email: String) async throws {
-        try await client.auth.resetPasswordForEmail(email)
+        try await SupabaseManager.shared.client.auth.resetPasswordForEmail(email)
     }
     
     func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {

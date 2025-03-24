@@ -71,10 +71,10 @@ struct ForgotPasswordEmailView: View {
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {
         ZStack(alignment: .leading) {
             if text.wrappedValue.isEmpty {
-                Text(placeholder)
+                TextField(placeholder, text: text)
                     .font(.custom("Courier", size: 16))
                     .foregroundColor(.black)
-                    .padding(.leading, 10)
+                    .padding()
             }
             TextField("", text: text)
                 .padding()
@@ -103,7 +103,7 @@ struct ForgotPasswordEmailView: View {
                     // Store the email in UserDefaults
                     UserDefaults.standard.set(email, forKey: "resetEmail")
                     isLoading = false
-                    alertMessage = "Password reset instructions sent to your email"
+                    alertMessage = "OTP sent to email successfully."
                     showAlert = true
                     navigateToOTP = true
                 }
