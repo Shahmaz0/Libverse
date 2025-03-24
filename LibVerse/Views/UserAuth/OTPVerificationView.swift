@@ -118,7 +118,7 @@ struct OTPVerificationView: View {
                 Text(alertMessage)
             }
             .navigationDestination(isPresented: $navigateToHome) {
-                HomeView()
+                TabBarView()
                     .navigationBarBackButtonHidden(true)
             }
             .onAppear {

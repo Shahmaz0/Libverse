@@ -79,6 +79,7 @@ struct LogInView: View {
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .navigationDestination(isPresented: $isLoggedIn) {
                 TabBarView()
+                    .navigationBarHidden(true)
             }
             .navigationDestination(isPresented: $showOTPView) {
                 OTPVerificationView(email: collegeEmail , password: password)
@@ -147,7 +148,7 @@ struct LogInView: View {
         Task {
             do {
                 try await SupabaseManager.shared.signIn(email: collegeEmail, password: password)
-                showOTPView = true
+                isLoggedIn = true // Set this to true on successful login
             } catch {
                 alertMessage = "Error sending magic link: \(error.localizedDescription)"
                 showAlert = true
