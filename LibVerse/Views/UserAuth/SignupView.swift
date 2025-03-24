@@ -141,7 +141,12 @@ struct SignUpView: View {
         isLoading = true
         Task {
             do {
-                let authResponse = try await supabaseManager.signUp(email: collegeEmail, password: password)
+                let authResponse = try await supabaseManager.signUp(
+                    email: collegeEmail, 
+                    password: password, 
+                    firstName: firstName, 
+                    lastName: lastName
+                )
                 
                 DispatchQueue.main.async {
                     isLoading = false
