@@ -144,23 +144,27 @@ struct UserNewPasswordView: View {
         isLoading = true
         
         do {
-            // Get email from UserDefaults
-            if let email = UserDefaults.standard.string(forKey: "resetEmail") {
-                try await SupabaseManager.shared.updatePassword(email: email, newPassword: newPassword)
+            // Get email and OTP from UserDefaults
+            if let email = UserDefaults.standard.string(forKey: "resetEmail"),
+               let otp = UserDefaults.standard.string(forKey: "resetOTP") {
+                try await SupabaseManager.shared.updatePassword(email: email, newPassword: newPassword, otp: otp)
                 
                 DispatchQueue.main.async {
-                    // Clear stored email
+                    // Clear stored email and OTP
                     UserDefaults.standard.removeObject(forKey: "resetEmail")
+                    UserDefaults.standard.removeObject(forKey: "resetOTP")
                     
-                    alertMessage = "Password updated successfully!"
-                    showAlert = true
-                    dismiss()
-                    // Navigate to login page
-                    showUserInitialView = false
+                    // Navigate to login view
+                    showUserInitialView = true
                     showMainApp = false
+                    
+                    // Add a small delay to show the loading state
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        dismiss()
+                    }
                 }
             } else {
-                alertMessage = "Error: Email not found for password reset"
+                alertMessage = "Error: Email or OTP not found for password reset"
                 showAlert = true
             }
         } catch {
