@@ -23,24 +23,24 @@ struct TabBarView: View {
         TabView(selection: $selectedTab) {
             HomeView()
                 .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Home")
-                }
-                .tag(0)
-            
-            SearchView()
-                .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("Search")
-                }
-                .tag(1)
-            
-            MyShelfView()
-                .tabItem {
                     Image(systemName: "books.vertical.fill")
                     Text("MyShelf")
                 }
-                .tag(2)
+                .tag(0)
+            
+//            SearchView()
+//                .tabItem {
+//                    Image(systemName: "magnifyingglass")
+//                    Text("Search")
+//                }
+//                .tag(1)
+            
+//            MyShelfView()
+//                .tabItem {
+//                    Image(systemName: "books.vertical.fill")
+//                    Text("MyShelf")
+//                }
+//                .tag(2)
             
 //            MyBookView()
 //                .tabItem {
@@ -72,116 +72,111 @@ struct HomeView: View {
     ]
     
     var body: some View {
-        NavigationView {
-            ZStack(alignment: .top) {
+            NavigationView {
                 ScrollView {
-                    
-//                    Spacer().frame(height: 20)
-//                    VStack(alignment: .leading, spacing: 5) {
-//                        Color.clear.frame(height: 50)
-//
-//                        VStack(alignment: .leading, spacing: 10) {
-//                            sectionHeader(title: "Popular")
-//                            horizontalBookScroll()
-//                        }
-//                        
-//                    }
-//                    .padding(.vertical)
+                    VStack(alignment: .leading, spacing: 20) {
+                        horizontalBookScroll()
+                    }
+                    .padding(.vertical)
                 }
                 .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-                
+                            .navigationTitle("Favourites") // Large title here
+                            .navigationBarTitleDisplayMode(.large) // Makes it large
+                        
+                    
+                    
                 HStack(spacing: 0) {
                     
-                    Rectangle()
-                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                        .frame(width: 65, height: 65)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.top, -1),
-                            alignment: .top
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.trailing, -1),
-                            alignment: .trailing
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.bottom, -1),
-                            alignment: .bottom
-                        )
-                    
-                    Rectangle()
-                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                        .frame(maxWidth: .infinity, maxHeight: 65)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.top, -1),
-                            alignment: .top
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.leading, -1),
-                            alignment: .leading
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.trailing, -1),
-                            alignment: .trailing
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.bottom, -1),
-                            alignment: .bottom
-                        )
-                        .overlay(
-                            Text("LIBVERSE")
-                                .font(.custom("Charter", size: 23))
-                                .bold()
-                                .foregroundColor(.black)
-                                .padding(.leading, 80),
-                            alignment: .leading
-                        )
-                    
-                    Rectangle()
-                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                        
-                        .frame(width: 65, height: 65)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.top, -1),
-                            alignment: .top
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.leading, -1),
-                            alignment: .leading
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.bottom, -1),
-                            alignment: .bottom
-                        )
+//                    Rectangle()
+//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+//                        .frame(width: 65, height: 65)
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.top, -1),
+//                            alignment: .top
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(width: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.trailing, -1),
+//                            alignment: .trailing
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.bottom, -1),
+//                            alignment: .bottom
+//                        )
+//
+//                    Rectangle()
+//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+//                        .frame(maxWidth: .infinity, maxHeight: 65)
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.top, -1),
+//                            alignment: .top
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(width: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.leading, -1),
+//                            alignment: .leading
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(width: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.trailing, -1),
+//                            alignment: .trailing
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.bottom, -1),
+//                            alignment: .bottom
+//                        )
+//                        .overlay(
+//                            Text("LIBVERSE")
+//                                .font(.custom("Charter", size: 23))
+//                                .bold()
+//                                .foregroundColor(.black)
+//                                .padding(.leading, 80),
+//                            alignment: .leading
+//                        )
+//
+//                    Rectangle()
+//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+//
+//                        .frame(width: 65, height: 65)
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.top, -1),
+//                            alignment: .top
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(width: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.leading, -1),
+//                            alignment: .leading
+//                        )
+//                        .overlay(
+//                            Rectangle()
+//                                .frame(height: 1.25)
+//                                .foregroundColor(.black)
+//                                .padding(.bottom, -1),
+//                            alignment: .bottom
+//                        )
                        
                         
                 }
@@ -189,7 +184,7 @@ struct HomeView: View {
                 .padding(.horizontal)
             }
         }
-    }
+
     
     // Helper for section headers
     func sectionHeader(title: String) -> some View {

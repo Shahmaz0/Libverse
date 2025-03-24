@@ -9,8 +9,8 @@ struct ContentView: View {
                 TabBarView()
             }
         }
-        LogInView()
-//        TabBarView()
+        //LogInView()
+        TabBarView()
     }
 }
 #Preview {
