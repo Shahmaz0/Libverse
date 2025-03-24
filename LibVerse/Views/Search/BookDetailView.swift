@@ -10,6 +10,7 @@ import SwiftUI
 struct BookDetailView: View {
     let book: Book
     @Environment(\.presentationMode) var presentationMode
+    @State private var isFavorite: Bool = false
     
     var body: some View {
         ScrollView {
@@ -95,7 +96,7 @@ struct BookDetailView: View {
                         Rectangle()
                             .stroke(Color.black, lineWidth: 0.5)
                             .frame(width: 120, height: 120)
-                        
+
                         if book.imageLink?.isEmpty ?? true {
                             Image("mvc")
                                 .resizable()
@@ -129,23 +130,34 @@ struct BookDetailView: View {
                     }
                     .frame(width: 120, height: 120)
                     .padding(.leading, 5)
-                    
+
                     VStack(alignment: .leading, spacing: 10) {
                         Text(book.title)
                             .font(.custom("Charter", size: 15))
                             .fontWeight(.semibold)
                             .foregroundColor(.black)
-                        
+                            .fixedSize(horizontal: false, vertical: true)
+
                         Text("By: \(book.author.joined(separator: ", "))")
                             .font(.custom("Charter", size: 13))
                             .foregroundColor(.gray)
+
+                        // Heart Button Positioned Properly
+                        Button(action: {
+                            isFavorite.toggle()
+                        }) {
+                            Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                .resizable()
+                                .frame(width: 22, height: 22)
+                                .foregroundColor(.black)
+                        }
+                        .padding(.top, 8) // Remove negative padding to improve tap area
                     }
-                    .padding(.top, 20)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal)
-                
+
                 // Divider
                 Rectangle()
                     .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
