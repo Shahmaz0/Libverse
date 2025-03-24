@@ -197,25 +197,19 @@ class SupabaseManager: ObservableObject {
         }
     }
     
-    func updatePassword(email: String, newPassword: String) async throws {
+    func updatePassword(email: String, newPassword: String, otp: String) async throws {
         // First verify the OTP
-        if let otp = UserDefaults.standard.string(forKey: "resetOTP") {
-            let session = try await client.auth.verifyOTP(
-                email: email,
-                token: otp,
-                type: .recovery
-            )
-            
-            // If OTP is verified, update the password
-            if session.user != nil {
-                try await client.auth.update(user: UserAttributes(password: newPassword))
-                // Clear the OTP after successful update
-                UserDefaults.standard.removeObject(forKey: "resetOTP")
-            } else {
-                throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid OTP"])
-            }
+        let session = try await client.auth.verifyOTP(
+            email: email,
+            token: otp,
+            type: .recovery
+        )
+        
+        // If OTP is verified, update the password
+        if session.user != nil {
+            try await client.auth.update(user: UserAttributes(password: newPassword))
         } else {
-            throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "OTP not found"])
+            throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid OTP"])
         }
     }
     
