@@ -144,8 +144,19 @@ struct SignUpView: View {
         isLoading = true
         Task {
             do {
+                let emailExists = try await SupabaseManager.shared.checkEmailExists(collegeEmail)
+                            
+                if emailExists {
+                    DispatchQueue.main.async {
+                        isLoading = false
+                        alertMessage = "This email is already registered. Please use a different email or sign in."
+                        showAlert = true
+                    }
+                    return
+                }
+                
                 let authResponse = try await supabaseManager.signUp(
-                    email: collegeEmail, 
+                    email: collegeEmail,
                     password: password, 
                     firstName: firstName, 
                     lastName: lastName

@@ -13,6 +13,7 @@ struct ForgotPasswordOTPView: View {
     
     @State private var otpFields: [String] = Array(repeating: "", count: 6)
     @FocusState private var fieldFocus: Int?
+    @Environment(\.dismiss) private var dismiss
     @State private var isLoading = false
     @State private var showAlert = false
     @State private var alertMessage = ""
@@ -113,7 +114,7 @@ struct ForgotPasswordOTPView: View {
             }
         }
         .navigationDestination(isPresented: $navigateToReset) {
-            UserNewPasswordView(showMainApp: .constant(false), showUserInitialView: .constant(true))
+            UserNewPasswordView(navigationPath: .constant(NavigationPath()), showMainApp: .constant(false), showUserInitialView: .constant(true))
         }
         .navigationBarBackButtonHidden(true)
         .alert("Alert", isPresented: $showAlert) {

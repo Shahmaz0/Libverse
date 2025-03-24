@@ -16,7 +16,7 @@ struct ForgotPasswordEmailView: View {
     @State private var navigateToOTP = false
     
     var body: some View {
-        NavigationStack {
+        
             VStack {
                 Spacer()
                 ScrollView {
@@ -65,7 +65,7 @@ struct ForgotPasswordEmailView: View {
             .navigationDestination(isPresented: $navigateToOTP) {
                 ForgotPasswordOTPView(email: email)
             }
-        }
+        
     }
     
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {

@@ -14,7 +14,7 @@ struct UserNewPasswordView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     @State private var isLoading = false
-    @Environment(\.dismiss) private var dismiss
+    @Binding var navigationPath: NavigationPath
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     @State private var showNewPassword = false
@@ -22,68 +22,66 @@ struct UserNewPasswordView: View {
     @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
-            VStack {
-                Spacer()
-                ScrollView {
-                    VStack(spacing: 30) {
-                        VStack(spacing: 20) {
-                            passwordField(
-                                title: "New Password",
-                                text: $newPassword,
-                                showPassword: $showNewPassword,
-                                placeholder: "Enter new password"
-                            )
-                            
-                            passwordField(
-                                title: "Confirm Password",
-                                text: $confirmPassword,
-                                showPassword: $showConfirmPassword,
-                                placeholder: "Re-enter new password"
-                            )
-                        }
-                        .padding(.horizontal)
+        VStack {
+            Spacer()
+            ScrollView {
+                VStack(spacing: 30) {
+                    VStack(spacing: 20) {
+                        passwordField(
+                            title: "New Password",
+                            text: $newPassword,
+                            showPassword: $showNewPassword,
+                            placeholder: "Enter new password"
+                        )
                         
-                        Button(action: {
-                            Task {
-                                await forgotPassword()
-                            }
-                        }) {
-                            if isLoading {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                            } else {
-                                Text("Reset Password")
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(newPassword.count >= 8 && newPassword == confirmPassword ?
-                                              Color(red: 255/255, green: 111/255, blue: 45/255) : Color.gray)
-                                    .foregroundColor(.white)
-                            }
+                        passwordField(
+                            title: "Confirm Password",
+                            text: $confirmPassword,
+                            showPassword: $showConfirmPassword,
+                            placeholder: "Re-enter new password"
+                        )
+                    }
+                    .padding(.horizontal)
+                    
+                    Button(action: {
+                        Task {
+                            await forgotPassword()
                         }
-                        .disabled(isLoading || newPassword.count < 8 || newPassword != confirmPassword)
-                        .padding(.horizontal)
+                    }) {
+                        if isLoading {
+                            ProgressView()
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                        } else {
+                            Text("Reset Password")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(newPassword.count >= 8 && newPassword == confirmPassword ?
+                                            Color(red: 255/255, green: 111/255, blue: 45/255) : Color.gray)
+                                .foregroundColor(.white)
+                        }
                     }
-                    .padding()
+                    .disabled(isLoading || newPassword.count < 8 || newPassword != confirmPassword)
+                    .padding(.horizontal)
                 }
-                Spacer()
+                .padding()
             }
-            .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-            .alert("Password Reset", isPresented: $showAlert) {
-                Button("OK") {
-                    if alertMessage == "Password updated successfully!" {
-                        // Dismiss all sheets
-                        dismiss()
-                        presentationMode.wrappedValue.dismiss()
-                        showUserInitialView = true
-                    }
-                }
-            } message: {
-                Text(alertMessage)
-            }
-            .navigationBarBackButtonHidden(true)
+            Spacer()
         }
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .alert("Password Reset", isPresented: $showAlert) {
+            Button("OK") {
+                if alertMessage == "Password updated successfully!" {
+                    navigationPath.removeLast(navigationPath.count) // Pops to root
+                    showUserInitialView = true
+                }
+            }
+        } message: {
+            Text(alertMessage)
+        }
+        .navigationBarBackButtonHidden(true)
+    }
         
         private func customTextField(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {
             VStack {
@@ -188,5 +186,5 @@ struct UserNewPasswordView: View {
 }
 
 #Preview {
-    UserNewPasswordView(showMainApp: .constant(false), showUserInitialView: .constant(false))
+    UserNewPasswordView(navigationPath: .constant(NavigationPath()), showMainApp: .constant(false), showUserInitialView: .constant(false))
 }

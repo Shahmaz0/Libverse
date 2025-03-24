@@ -8,6 +8,7 @@ struct OTPVerificationView: View {
     @FocusState private var fieldFocus: Int?
     @State private var errorMessage: String?
     @State private var navigateToHome = false
+    @State private var isForgetPasswordFlow = false
     @State private var showSuccessMessage = false
     @State private var isLoading = false
     @State private var showAlert = false
@@ -132,13 +133,31 @@ struct OTPVerificationView: View {
         isLoading = true
         errorMessage = nil
         
-        // Check if this is for login or signup by looking for pendingLoginEmail in UserDefaults
-        let isLoginFlow = UserDefaults.standard.string(forKey: "pendingLoginEmail") != nil
+        // Check if this is for forgot password flow
+        isForgetPasswordFlow = UserDefaults.standard.string(forKey: "resetEmail") != nil
         
         Task {
             do {
-                if isLoginFlow {
-                    // Use verifyLoginOTP for login flow
+                if isForgetPasswordFlow {
+                    // For forgot password flow
+                    try await SupabaseManager.shared.verifyOTP(email: email, otp: otp) { result in
+                        DispatchQueue.main.async {
+                            isLoading = false
+                            switch result {
+                            case .success:
+                                withAnimation {
+                                    showSuccessMessage = true
+                                }
+                                navigateToHome = true
+                            case .failure(let error):
+                                errorMessage = error.localizedDescription
+                                alertMessage = "Error: \(error.localizedDescription)"
+                                showAlert = true
+                            }
+                        }
+                    }
+                } else if UserDefaults.standard.string(forKey: "pendingLoginEmail") != nil {
+                    // For login flow
                     _ = try await SupabaseManager.shared.verifyLoginOTP(email: email, otp: otp)
                     
                     DispatchQueue.main.async {
@@ -146,11 +165,10 @@ struct OTPVerificationView: View {
                         withAnimation {
                             showSuccessMessage = true
                         }
-                        alertMessage = "Email verified successfully!"
-                        showAlert = true
+                        navigateToHome = true
                     }
                 } else {
-                    // Use regular verifyOTP for signup flow
+                    // For signup flow
                     SupabaseManager.shared.verifyOTP(email: email, otp: otp) { result in
                         DispatchQueue.main.async {
                             isLoading = false
@@ -159,8 +177,7 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
-                                alertMessage = "Email verified successfully!"
-                                showAlert = true
+                                navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription
                                 alertMessage = "Error: \(error.localizedDescription)"
@@ -179,6 +196,8 @@ struct OTPVerificationView: View {
             }
         }
     }
+    
+
     
     private func resendCode() {
         isLoading = true

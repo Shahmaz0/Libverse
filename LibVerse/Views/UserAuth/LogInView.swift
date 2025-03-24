@@ -45,15 +45,13 @@ struct LogInView: View {
                         // Forgot Password Link
                         HStack {
                             Spacer()
-                            Button(action: { showForgotPasswordFlow = true }) {
+                            NavigationLink(destination: ForgotPasswordEmailView()) {
                                 Text("Forgot Password?")
                                     .font(.custom("Courier", size: 16))
                                     .foregroundColor(.black)
                             }
                         }
-                        .sheet(isPresented: $showForgotPasswordFlow) {
-                            ForgotPasswordEmailView()
-                        }
+                        .padding()
                         
                         // Log In Button
                         Button(action: logIn) {
@@ -106,7 +104,7 @@ struct LogInView: View {
                 TextField(placeholder, text: text)
                     .font(.custom("Courier", size: 16))
                     .foregroundColor(.black)
-                    .padding(.leading, 10)
+                    .padding()
             }
             TextField("", text: text)
                 .padding()

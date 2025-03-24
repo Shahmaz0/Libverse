@@ -96,6 +96,16 @@ class SupabaseManager: ObservableObject {
         currentUser = nil
     }
     
+    func checkEmailExists(_ email: String) async throws -> Bool {
+        let response: PostgrestResponse<[Member]> = try await SupabaseManager.shared.client
+            .from("members")
+            .select()
+            .eq("college_email", value: email.lowercased())
+            .execute()
+        
+        return !response.value.isEmpty
+    }
+    
     func verifyOTP(email: String, otp: String, completion: @escaping (Result<Session, Error>) -> Void) {
         Task {
             do {
@@ -139,7 +149,7 @@ class SupabaseManager: ObservableObject {
         )
         
         do {
-            _ = try await client.database
+            _ = try await SupabaseManager.shared.client
                 .from("Member")
                 .insert(member)
                 .execute()
@@ -152,7 +162,7 @@ class SupabaseManager: ObservableObject {
     }
     
     func verifyLoginOTP(email: String, otp: String) async throws -> Session {
-            let response = try await client.auth.verifyOTP(
+        let response = try await SupabaseManager.shared.client.auth.verifyOTP(
                 email: email,
                 token: otp,
                 type: .email
@@ -197,40 +207,32 @@ class SupabaseManager: ObservableObject {
         }
     }
     
-    func updatePassword(email: String, newPassword: String, otp: String) async throws {
-        let session = try await client.auth.verifyOTP(
-            email: email,
-            token: otp,
-            type: .recovery
-        )
-        
-        // If OTP is verified, update the password
-        if session.user != nil {
-            try await client.auth.update(user: UserAttributes(password: newPassword))
+    func updatePassword(email: String, newPassword: String) async throws {
+        // First verify the OTP
+        if let otp = UserDefaults.standard.string(forKey: "resetOTP") {
+            let session = try await client.auth.verifyOTP(
+                email: email,
+                token: otp,
+                type: .recovery
+            )
             
-            if let otp = UserDefaults.standard.string(forKey: "resetOTP") {
-                let session = try await client.auth.verifyOTP(
-                    email: email,
-                    token: otp,
-                    type: .recovery
-                )
-                
-                // If OTP is verified, update the password
-                if session.user != nil {
-                    try await SupabaseManager.shared.client.auth.update(user: UserAttributes(password: newPassword))
-                    // Clear the OTP after successful update
-                    UserDefaults.standard.removeObject(forKey: "resetOTP")
-                } else {
-                    throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid OTP"])
-                }
+            // If OTP is verified, update the password
+            if session.user != nil {
+                try await SupabaseManager.shared.client.auth.update(user: UserAttributes(password: newPassword))
+                // Clear the OTP after successful update
+                UserDefaults.standard.removeObject(forKey: "resetOTP")
             } else {
                 throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid OTP"])
             }
+        } else {
+            throw NSError(domain: "PasswordReset", code: -1, userInfo: [NSLocalizedDescriptionKey: "OTP not found"])
         }
-        
-        func resetPasswordForEmail(_ email: String) async throws {
-            try await SupabaseManager.shared.client.auth.resetPasswordForEmail(email)
-        }
+    }
+    
+    func resetPasswordForEmail(_ email: String) async throws {
+        try await SupabaseManager.shared.client.auth.resetPasswordForEmail(email)
+    }
+    
         
         func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {
             // Fetch the current member data
@@ -264,4 +266,4 @@ class SupabaseManager: ObservableObject {
             print("Favourites updated successfully for user: \(userId)")
         }
     }
-}
+
