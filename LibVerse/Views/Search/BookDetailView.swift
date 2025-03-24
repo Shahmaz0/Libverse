@@ -11,11 +11,11 @@ struct BookDetailView: View {
     let book: Book
     @Environment(\.presentationMode) var presentationMode
     @State private var isFavorite: Bool = false
+    @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
         ScrollView {
             VStack(alignment: .center, spacing: 16) {
-                // Top Navigation Bar
                 HStack(spacing: 0) {
                     Rectangle()
                         .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -90,7 +90,6 @@ struct BookDetailView: View {
                 .frame(width: 400)
                 .padding(.horizontal, -20)
                 
-                // Book Image and Title Section
                 HStack(alignment: .top, spacing: 16) {
                     ZStack {
                         Rectangle()
@@ -142,23 +141,34 @@ struct BookDetailView: View {
                             .font(.custom("Charter", size: 13))
                             .foregroundColor(.gray)
 
-                        // Heart Button Positioned Properly
                         Button(action: {
                             isFavorite.toggle()
+                            Task {
+                                if let userId = supabaseManager.currentUser?.id {
+                                    do {
+                                        try await supabaseManager.updateFavourites(
+                                            userId: userId,
+                                            bookId: book.id,
+                                            isFavourite: isFavorite
+                                        )
+                                    } catch {
+                                        print("Error updating favourites: \(error)")
+                                    }
+                                }
+                            }
                         }) {
                             Image(systemName: isFavorite ? "heart.fill" : "heart")
                                 .resizable()
                                 .frame(width: 22, height: 22)
                                 .foregroundColor(.black)
                         }
-                        .padding(.top, 8) // Remove negative padding to improve tap area
+                        .padding(.top, 8)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal)
 
-                // Divider
                 Rectangle()
                     .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
                     .frame(width: 365, height: 1)
@@ -170,22 +180,19 @@ struct BookDetailView: View {
                         alignment: .top
                     )
                 
-                // Book Details Section
                 VStack(alignment: .leading, spacing: 10) {
-                    // Genre
                     HStack(alignment: .top, spacing: 10) {
                         Text("Genre")
                             .font(.custom("Charter", size: 14))
                             .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading) // Fixed width for labels
+                            .frame(width: 120, alignment: .leading)
                         
                         Text(book.genre)
                             .font(.custom("Charter", size: 14))
                             .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading) // Take remaining space
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Shelf Location
                     HStack(alignment: .top, spacing: 10) {
                         Text("Shelf Location")
                             .font(.custom("Charter", size: 14))
@@ -198,7 +205,6 @@ struct BookDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Available Copies
                     HStack(alignment: .top, spacing: 10) {
                         Text("Available Copies")
                             .font(.custom("Charter", size: 14))
@@ -211,7 +217,6 @@ struct BookDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Publisher
                     HStack(alignment: .top, spacing: 10) {
                         Text("Publisher")
                             .font(.custom("Charter", size: 14))
@@ -224,7 +229,6 @@ struct BookDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
-                    // Released
                     HStack(alignment: .top, spacing: 10) {
                         Text("Released")
                             .font(.custom("Charter", size: 14))
@@ -237,10 +241,9 @@ struct BookDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                .padding(.leading, 20) // Add leading padding for alignment
-                .frame(maxWidth: .infinity, alignment: .leading) // Ensure the VStack takes full width
+                .padding(.leading, 20)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                // Divider
                 Rectangle()
                     .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
                     .frame(width: 365, height: 1)
@@ -252,7 +255,6 @@ struct BookDetailView: View {
                         alignment: .top
                     )
                 
-                // Description
                 Text(book.Description ?? "No description available")
                     .font(.custom("Charter", size: 13))
                     .foregroundColor(.black)
@@ -267,6 +269,26 @@ struct BookDetailView: View {
         .navigationBarHidden(true)
         .navigationBarBackButtonHidden(true)
         .edgesIgnoringSafeArea(.bottom)
+        .onAppear {
+            // Check if the book is already in favourites
+            if let userId = supabaseManager.currentUser?.id {
+                Task {
+                    do {
+                        let query = supabaseManager.client
+                            .from("Member")
+                            .select()
+                            .eq("id", value: userId)
+                        
+                        let response: [Member] = try await query.execute().value
+                        if let member = response.first {
+                            isFavorite = member.favourites.contains(book.id.uuidString)
+                        }
+                    } catch {
+                        print("Error fetching member data: \(error)")
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -288,102 +310,3 @@ struct BookDetailView: View {
     )
     return BookDetailView(book: sampleBook)
 }
-
-//Narrator
-//Text("Narrator: Jim Dale")
-//    .font(.custom("sfprodisplaymedium", size: 16))
-//    .foregroundColor(.black)
-//
-//// Divider
-//Divider()
-//    .background(Color.gray.opacity(0.3))
-//
-//// Read Free For 30 Days
-//Text("Read Free For 30 Days")
-//    .font(.custom("sfprodisplaymedium", size: 20))
-//    .foregroundColor(.black)
-//
-//// Play Sample Button
-//Button(action: {
-//    // Action to play sample
-//}) {
-//    Text("Play Sample")
-//        .font(.custom("sfprodisplaymedium", size: 18))
-//        .foregroundColor(.white)
-//        .padding()
-//        .frame(maxWidth: .infinity)
-//        .background(Color.blue)
-//        .cornerRadius(8)
-//}
-//
-//// Download, Save, Add to List
-//HStack {
-//    Button(action: {
-//        // Action for Download
-//    }) {
-//        Text("Download")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.blue)
-//    }
-//    Spacer()
-//    Button(action: {
-//        // Action for Save
-//    }) {
-//        Text("Save")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.blue)
-//    }
-//    Spacer()
-//    Button(action: {
-//        // Action for Add to List
-//    }) {
-//        Text("Add to List")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.blue)
-//    }
-//}
-//.padding(.vertical)
-//
-//// Rating, Length, Format, Publisher, Released
-//VStack(alignment: .leading, spacing: 8) {
-//    HStack {
-//        Text("Rating ★★★★★(1.5K)")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.black)
-//        Spacer()
-//    }
-//    
-//    HStack {
-//        Text("Length 22 hr 56 min")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.black)
-//        Spacer()
-//    }
-//    
-//    HStack {
-//        Text("Format Audiobook")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.black)
-//        Spacer()
-//    }
-//    
-//    HStack {
-//        Text("Publisher Audible Verse, Inc.")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.black)
-//        Spacer()
-//    }
-//    
-//    HStack {
-//        Text("Released Apr 24, 2022")
-//            .font(.custom("sfprodisplaymedium", size: 16))
-//            .foregroundColor(.black)
-//        Spacer()
-//    }
-//}
-//
-//// Description
-//Text(book.Description ?? "No description available")
-//    .font(.custom("sfprodisplaymedium", size: 16))
-//    .foregroundColor(.black)
-//    .lineLimit(nil)

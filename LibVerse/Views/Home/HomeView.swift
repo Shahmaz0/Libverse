@@ -21,19 +21,20 @@ struct TabBarView: View {
     @State private var selectedTab = 0
     var body: some View {
         TabView(selection: $selectedTab) {
+            SearchView()
+                .tabItem {
+                    Image(systemName: "magnifyingglass")
+                    Text("Search")
+                }
+                .tag(0)
+            
             HomeView()
                 .tabItem {
                     Image(systemName: "books.vertical.fill")
                     Text("MyShelf")
                 }
-                .tag(0)
+                .tag(1)
             
-//            SearchView()
-//                .tabItem {
-//                    Image(systemName: "magnifyingglass")
-//                    Text("Search")
-//                }
-//                .tag(1)
             
 //            MyShelfView()
 //                .tabItem {

@@ -9,24 +9,15 @@ import Foundation
 import SwiftUI
 import Supabase
 
-struct UserData: Codable {
-    let id: UUID
-    let fullName: String
-    let email: String
-    let contactNumber: String
-}
-
-// Member model matching Supabase table schema
 struct Member: Codable {
     let id: UUID?
     let email: String
     let password: String?
     let firstName: String
     let lastName: String
-    let favourites: [String]
+    var favourites: [String]
     let created_at: Date?
     
-    // Initialize with required fields for signup
     init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], created_at: Date? = nil) {
         self.id = id
         self.email = email
@@ -55,9 +46,9 @@ class SupabaseManager: ObservableObject {
     @Published var currentUser: User?
     @Published var currentSession: Session?
     
-//    private let supabaseURL = URL(string: "https://ghpqzceylrmteqwqbopv.supabase.co")!
+
     private let supabaseURL = URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!
-//    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdocHF6Y2V5bHJtdGVxd3Fib3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjYzNzYsImV4cCI6MjA1NDc0MjM3Nn0.duY-f0-9pprTdouAqwPojMbw05PuOW3B5tok3w9zxOA"
+
     private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlzd3pnZW1nY3RvamNkbmJ4dmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMzAwODgsImV4cCI6MjA1NzgwNjA4OH0.zmATRCYC3V8_BtROa_PzmFxabWQf0NjyNSQaMrwPL7E"
     
     private init() {
@@ -231,5 +222,37 @@ class SupabaseManager: ObservableObject {
     func resetPasswordForEmail(_ email: String) async throws {
         try await client.auth.resetPasswordForEmail(email)
     }
+    
+    func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {
+            // Fetch the current member data
+            let query = client
+                .from("Member")
+                .select()
+                .eq("id", value: userId)
+            
+            let response: [Member] = try await query.execute().value
+            
+            guard var member = response.first else {
+                throw NSError(domain: "Supabase", code: -1, userInfo: [NSLocalizedDescriptionKey: "Member not found"])
+            }
+            
+            // Update the favourites array
+            if isFavourite {
+                if !member.favourites.contains(bookId.uuidString) {
+                    member.favourites.append(bookId.uuidString)
+                }
+            } else {
+                member.favourites.removeAll { $0 == bookId.uuidString }
+            }
+            
+            // Update the member in the database
+            try await client
+                .from("Member")
+                .update(["favourites": member.favourites])
+                .eq("id", value: userId)
+                .execute()
+            
+            print("Favourites updated successfully for user: \(userId)")
+        }
     
 }
