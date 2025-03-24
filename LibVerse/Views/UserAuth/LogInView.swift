@@ -103,7 +103,7 @@ struct LogInView: View {
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {
         ZStack(alignment: .leading) {
             if text.wrappedValue.isEmpty {
-                Text(placeholder)
+                TextField(placeholder, text: text)
                     .font(.custom("Courier", size: 16))
                     .foregroundColor(.black)
                     .padding(.leading, 10)
