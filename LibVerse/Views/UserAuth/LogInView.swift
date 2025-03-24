@@ -78,7 +78,7 @@ struct LogInView: View {
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .navigationDestination(isPresented: $isLoggedIn) {
-                HomeView()
+                TabBarView()
             }
             .navigationDestination(isPresented: $showOTPView) {
                 OTPVerificationView(email: collegeEmail , password: password)

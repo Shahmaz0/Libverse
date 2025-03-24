@@ -33,8 +33,10 @@ class SupabaseManager: ObservableObject {
     @Published var currentUser: User?
     @Published var currentSession: Session?
     
-    private let supabaseURL = URL(string: "https://ghpqzceylrmteqwqbopv.supabase.co")!
-    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdocHF6Y2V5bHJtdGVxd3Fib3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjYzNzYsImV4cCI6MjA1NDc0MjM3Nn0.duY-f0-9pprTdouAqwPojMbw05PuOW3B5tok3w9zxOA"
+//    private let supabaseURL = URL(string: "https://ghpqzceylrmteqwqbopv.supabase.co")!
+    private let supabaseURL = URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!
+//    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdocHF6Y2V5bHJtdGVxd3Fib3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjYzNzYsImV4cCI6MjA1NDc0MjM3Nn0.duY-f0-9pprTdouAqwPojMbw05PuOW3B5tok3w9zxOA"
+    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlzd3pnZW1nY3RvamNkbmJ4dmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMzAwODgsImV4cCI6MjA1NzgwNjA4OH0.zmATRCYC3V8_BtROa_PzmFxabWQf0NjyNSQaMrwPL7E"
     
     private init() {
         self.client = SupabaseClient(
