@@ -149,7 +149,7 @@ struct BookDetailView: View {
                             Image(systemName: isFavorite ? "heart.fill" : "heart")
                                 .resizable()
                                 .frame(width: 22, height: 22)
-                                .foregroundColor(.black)
+                                .foregroundColor(.orange)
                         }
                         .padding(.top, 8) // Remove negative padding to improve tap area
                     }
