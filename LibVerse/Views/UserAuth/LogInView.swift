@@ -21,12 +21,13 @@ struct LogInView: View {
                         // Header
                         Image("Logo")
                             .resizable()
-                            .frame(width: 120, height: 120)
+                            .frame(width: 160, height: 160
+                            )
                             .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                         
                         VStack(spacing: 15) {
                             Text("Get the most out of Pustakalaya")
-                                .font(.custom("Courier New", size: 25))
+                                .font(.custom("Courier New", size: 20))
                                 .bold()
                                 .multilineTextAlignment(.center)
                             
