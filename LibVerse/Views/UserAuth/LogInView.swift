@@ -30,7 +30,7 @@ struct LogInView: View {
                                 .bold()
                                 .multilineTextAlignment(.center)
                             
-                            Text("Unlock the full access of the world’s most fascinating digital library, Discover millions of ebooks, audiobooks, magazines and more.")
+                            Text("Unlock the full access of the world's most fascinating digital library, Discover millions of ebooks, audiobooks, magazines and more.")
                                 .font(.custom("Courier", size: 16))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
@@ -57,13 +57,23 @@ struct LogInView: View {
                         
                         // Log In Button
                         Button(action: logIn) {
-                            Text("Log In")
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                                .foregroundColor(.white)
-                                .cornerRadius(10)
+                            if isLoading {
+                                ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            } else {
+                                Text("Log In")
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                            }
                         }
+                        .disabled(isLoading)
                         
                         // Navigation to SignUpView
                         NavigationLink(destination: SignUpView().navigationBarBackButtonHidden(true)) {
@@ -145,13 +155,37 @@ struct LogInView: View {
             return
         }
         
+        isLoading = true
+        
         Task {
             do {
-                try await SupabaseManager.shared.signIn(email: collegeEmail, password: password)
-                isLoggedIn = true // Set this to true on successful login
+                // First verify the email and password format is valid
+                guard !password.isEmpty, password.count >= 6 else {
+                    DispatchQueue.main.async {
+                        isLoading = false
+                        alertMessage = "Password must be at least 6 characters."
+                        showAlert = true
+                    }
+                    return
+                }
+                
+                // Send OTP to email
+                try await SupabaseManager.shared.client.auth.signInWithOTP(email: collegeEmail)
+                
+                // Store credentials for completing login after OTP verification
+                UserDefaults.standard.set(collegeEmail, forKey: "pendingLoginEmail")
+                UserDefaults.standard.set(password, forKey: "pendingLoginPassword")
+                
+                DispatchQueue.main.async {
+                    isLoading = false
+                    showOTPView = true
+                }
             } catch {
-                alertMessage = "Error sending magic link: \(error.localizedDescription)"
-                showAlert = true
+                DispatchQueue.main.async {
+                    isLoading = false
+                    alertMessage = "Error sending verification code: \(error.localizedDescription)"
+                    showAlert = true
+                }
             }
         }
     }
