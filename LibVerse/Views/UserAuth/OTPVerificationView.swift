@@ -107,6 +107,7 @@ struct OTPVerificationView: View {
                         .transition(.scale.combined(with: .opacity))
                 }
             }
+            .navigationBarBackButtonHidden(true)
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .alert("Verification", isPresented: $showAlert) {
                 Button("OK") {
