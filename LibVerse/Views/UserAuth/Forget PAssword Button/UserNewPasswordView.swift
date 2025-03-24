@@ -26,22 +26,22 @@ struct UserNewPasswordView: View {
                 Spacer()
                 ScrollView {
                     VStack(spacing: 30) {
-                        VStack(spacing: 15) {
-                            Text("Set a New Password")
-                                .font(.custom("Courier New", size: 25))
-                                .bold()
-                                .frame(width: 287, alignment: .center)
-                            
-                            Text("Create a secure password for your account")
-                                .font(.custom("Courier", size: 16))
-                                .frame(width: 350)
-                                .multilineTextAlignment(.center)
-                        }
-                        
                         VStack(spacing: 20) {
-                            customTextField(placeholder: "New Password", text: $newPassword, isSecure: !showNewPassword)
-                            customTextField(placeholder: "Confirm Password", text: $confirmPassword, isSecure: !showConfirmPassword)
+                            passwordField(
+                                title: "New Password",
+                                text: $newPassword,
+                                showPassword: $showNewPassword,
+                                placeholder: "Enter new password"
+                            )
+                            
+                            passwordField(
+                                title: "Confirm Password",
+                                text: $confirmPassword,
+                                showPassword: $showConfirmPassword,
+                                placeholder: "Re-enter new password"
+                            )
                         }
+                        .padding(.horizontal)
                         
                         Button(action: {
                             Task {
@@ -153,20 +153,16 @@ struct UserNewPasswordView: View {
     private func passwordField(title: String, text: Binding<String>, showPassword: Binding<Bool>, placeholder: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.headline)
-                .foregroundColor(.secondary)
+                .font(.custom("Courier", size: 16))
+                .foregroundColor(.black)
             
             HStack {
                 if showPassword.wrappedValue {
                     TextField(placeholder, text: text)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(10)
+                        .font(.custom("Courier", size: 16))
                 } else {
                     SecureField(placeholder, text: text)
-                        .padding()
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(10)
+                        .font(.custom("Courier", size: 16))
                 }
                 
                 Button(action: {
@@ -175,12 +171,16 @@ struct UserNewPasswordView: View {
                     Image(systemName: showPassword.wrappedValue ? "eye.slash.fill" : "eye.fill")
                         .foregroundColor(.gray)
                 }
-                .padding(.trailing, 8)
             }
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(10)
+            .padding()
+            .frame(height: 43)
+            .overlay(
+                RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.black, lineWidth: 1.25)
+            )
         }
     }
+
     
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)

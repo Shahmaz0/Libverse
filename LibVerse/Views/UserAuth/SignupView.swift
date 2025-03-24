@@ -10,7 +10,7 @@ struct SignUpView: View {
     @State private var collegeEmail: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
-    
+    @Environment(\.presentationMode) var presentationMode
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
@@ -82,12 +82,15 @@ struct SignUpView: View {
                         Alert(title: Text("Sign Up"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
                     }
                     
-                    NavigationLink(destination: LogInView().navigationBarBackButtonHidden(true)) {
+                    Button(action: {
+                        presentationMode.wrappedValue.dismiss()
+                    }) {
                         Text("Already a user? Sign In")
                             .font(.custom("Courier", size: 16))
                             .foregroundColor(.black)
                             .font(.subheadline)
                     }
+
                 }
                 .padding()
             }
