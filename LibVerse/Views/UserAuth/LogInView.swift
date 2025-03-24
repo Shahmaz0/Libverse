@@ -25,12 +25,12 @@ struct LogInView: View {
                             .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                         
                         VStack(spacing: 15) {
-                            Text("Get the most out of Libverse")
+                            Text("Get the most out of Pustakalaya")
                                 .font(.custom("Courier New", size: 25))
                                 .bold()
                                 .multilineTextAlignment(.center)
                             
-                            Text("Unlock the full access of the world's most fascinating digital library, Discover millions of ebooks, audiobooks, magazines and more.")
+                            Text("Access your university’s digital library and discover a vast collection of academic books, journals and novels.")
                                 .font(.custom("Courier", size: 16))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
@@ -46,7 +46,7 @@ struct LogInView: View {
                         HStack {
                             Spacer()
                             Button(action: { showForgotPasswordFlow = true }) {
-                                Text("Forgot Password")
+                                Text("Forgot Password?")
                                     .font(.custom("Courier", size: 16))
                                     .foregroundColor(.black)
                             }
