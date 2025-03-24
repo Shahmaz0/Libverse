@@ -20,6 +20,7 @@ class DataController: ObservableObject, @unchecked Sendable {
         self.supabase = SupabaseClient(
             supabaseURL: URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!,
             supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlzd3pnZW1nY3RvamNkbmJ4dmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMzAwODgsImV4cCI6MjA1NzgwNjA4OH0.zmATRCYC3V8_BtROa_PzmFxabWQf0NjyNSQaMrwPL7E"
+            
         )
         
         fetchBooks()

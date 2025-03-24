@@ -16,6 +16,28 @@ struct UserData: Codable {
     let contactNumber: String
 }
 
+// Member model matching Supabase table schema
+struct Member: Codable {
+    let id: UUID?
+    let email: String
+    let password: String?
+    let firstName: String
+    let lastName: String
+    let favourites: [String]
+    let created_at: Date?
+    
+    // Initialize with required fields for signup
+    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], created_at: Date? = nil) {
+        self.id = id
+        self.email = email
+        self.password = password
+        self.firstName = firstName
+        self.lastName = lastName
+        self.favourites = favourites
+        self.created_at = created_at
+    }
+}
+
 // Login credentials model
 struct LoginCredentials {
     let email: String
@@ -33,8 +55,10 @@ class SupabaseManager: ObservableObject {
     @Published var currentUser: User?
     @Published var currentSession: Session?
     
-    private let supabaseURL = URL(string: "https://ghpqzceylrmteqwqbopv.supabase.co")!
-    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdocHF6Y2V5bHJtdGVxd3Fib3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjYzNzYsImV4cCI6MjA1NDc0MjM3Nn0.duY-f0-9pprTdouAqwPojMbw05PuOW3B5tok3w9zxOA"
+//    private let supabaseURL = URL(string: "https://ghpqzceylrmteqwqbopv.supabase.co")!
+    private let supabaseURL = URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!
+//    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdocHF6Y2V5bHJtdGVxd3Fib3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzkxNjYzNzYsImV4cCI6MjA1NDc0MjM3Nn0.duY-f0-9pprTdouAqwPojMbw05PuOW3B5tok3w9zxOA"
+    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlzd3pnZW1nY3RvamNkbmJ4dmp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIyMzAwODgsImV4cCI6MjA1NzgwNjA4OH0.zmATRCYC3V8_BtROa_PzmFxabWQf0NjyNSQaMrwPL7E"
     
     private init() {
         self.client = SupabaseClient(
@@ -43,10 +67,17 @@ class SupabaseManager: ObservableObject {
         )
     }
     
-    func signUp(email: String, password: String) async throws -> AuthResponse {
-        // Only handle authentication, no extra data storage
+    func signUp(email: String, password: String, firstName: String, lastName: String) async throws -> AuthResponse {
+        // Only handle authentication, no extra data storage yet
         let authResponse = try await client.auth.signUp(email: email, password: password)
         currentUser = authResponse.user
+        
+        // Store user information for later storage after OTP verification
+        UserDefaults.standard.set(email, forKey: "pendingSignupEmail")
+        UserDefaults.standard.set(password, forKey: "pendingSignupPassword")
+        UserDefaults.standard.set(firstName, forKey: "pendingSignupFirstName")
+        UserDefaults.standard.set(lastName, forKey: "pendingSignupLastName")
+        
         return authResponse
     }
     
@@ -78,6 +109,23 @@ class SupabaseManager: ObservableObject {
         Task {
             do {
                 let response = try await client.auth.verifyOTP(email: email, token: otp, type: .email)
+                
+                // If OTP is verified and we have a session, save the member data to Supabase
+                if let session = response.session, 
+                   let pendingEmail = UserDefaults.standard.string(forKey: "pendingSignupEmail"),
+                   let firstName = UserDefaults.standard.string(forKey: "pendingSignupFirstName"),
+                   let lastName = UserDefaults.standard.string(forKey: "pendingSignupLastName") {
+                    
+                    // Create the member record in Supabase
+                    try await saveMemberData(userId: session.user.id, email: pendingEmail, firstName: firstName, lastName: lastName)
+                    
+                    // Clear stored signup data
+                    UserDefaults.standard.removeObject(forKey: "pendingSignupEmail")
+                    UserDefaults.standard.removeObject(forKey: "pendingSignupPassword")
+                    UserDefaults.standard.removeObject(forKey: "pendingSignupFirstName")
+                    UserDefaults.standard.removeObject(forKey: "pendingSignupLastName")
+                }
+                
                 DispatchQueue.main.async {
                     completion(.success(response.session!))
                 }
@@ -86,6 +134,29 @@ class SupabaseManager: ObservableObject {
                     completion(.failure(error))
                 }
             }
+        }
+    }
+    
+    // Function to save member data to Supabase "Member" table
+    func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String) async throws {
+        let member = Member(
+            id: userId,
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            favourites: []
+        )
+        
+        do {
+            _ = try await client.database
+                .from("Member")
+                .insert(member)
+                .execute()
+            
+            print("Member data saved successfully with ID: \(userId)")
+        } catch {
+            print("Error saving member data: \(error)")
+            throw error
         }
     }
     
