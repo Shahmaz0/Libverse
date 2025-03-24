@@ -3,16 +3,17 @@ import SwiftUI
 struct ContentView: View {
     
     var isAuthenticated: Bool = false
+    
     var body: some View {
         if isAuthenticated {
-            NavigationStack {
-                TabBarView()
-            }
+            TabBarView()
+        } else {
+            LogInView()
         }
-        LogInView()
-//        TabBarView()
     }
 }
+    
+    
 #Preview {
     ContentView()
 }
