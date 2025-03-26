@@ -73,14 +73,12 @@ struct UserNewPasswordView: View {
         .alert("Password Reset", isPresented: $showAlert) {
             Button("OK") {
                 if alertMessage == "Password updated successfully!" {
-                    navigationPath.removeLast(navigationPath.count) // Pops to root
-                    showUserInitialView = true
+                    navigationPath.append("LogInView")
                 }
             }
         } message: {
             Text(alertMessage)
         }
-        .navigationBarBackButtonHidden(true)
     }
         
         private func customTextField(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {

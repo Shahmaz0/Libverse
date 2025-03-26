@@ -14,6 +14,8 @@ struct ForgotPasswordEmailView: View {
     @State private var alertMessage = ""
     @State private var isLoading = false
     @State private var navigateToOTP = false
+    @State private var showUserInitialView = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         
@@ -57,6 +59,7 @@ struct ForgotPasswordEmailView: View {
                 Spacer()
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+            .navigationBarBackButtonHidden(true)
             .alert("Alert", isPresented: $showAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -65,8 +68,22 @@ struct ForgotPasswordEmailView: View {
             .navigationDestination(isPresented: $navigateToOTP) {
                 ForgotPasswordOTPView(email: email)
             }
-        
-    }
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        HStack {
+                            Image(systemName: "chevron.left")
+                                .foregroundStyle(Color.blue)
+                            Text("Back")
+                                .foregroundStyle(Color.blue)
+                        }
+                    }
+                }
+            }
+        }
+    
     
     private func customTextField(placeholder: String, text: Binding<String>, keyboardType: UIKeyboardType = .default, autocapitalization: UITextAutocapitalizationType = .words) -> some View {
         ZStack(alignment: .leading) {
@@ -94,7 +111,7 @@ struct ForgotPasswordEmailView: View {
             showAlert = true
             return
         }
-
+        
         isLoading = true
         Task {
             do {
