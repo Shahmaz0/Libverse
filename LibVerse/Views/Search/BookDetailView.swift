@@ -11,6 +11,7 @@ struct BookDetailView: View {
     let book: Book
     @Environment(\.presentationMode) var presentationMode
     @State private var isFavorite: Bool = false
+    @State private var showingQRCode = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -149,7 +150,9 @@ struct BookDetailView: View {
                     
                     
                     Button(action: {
-                        print("Button Pressed")
+                        if let userId = supabaseManager.currentUser?.id {
+                            showingQRCode = true
+                        }
                     }) {
                         Text("Issue Now")
                             .frame(width: 325, height: 20)
@@ -158,6 +161,11 @@ struct BookDetailView: View {
                             .foregroundColor(.white)
                             .cornerRadius(0)
                             .border(.black)
+                    }
+                    .sheet(isPresented: $showingQRCode) {
+                        if let userId = supabaseManager.currentUser?.id {
+                            QRCodeGeneratorView(book: book, memberId: userId.uuidString)
+                        }
                     }
                     
                     HStack(spacing: 0) {
