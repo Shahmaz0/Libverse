@@ -21,7 +21,7 @@ struct LogInView: View {
                         // Header
                         Image("Logo")
                             .resizable()
-                            .frame(width: 120, height: 120)
+                            .frame(width: 160, height: 160)
                             .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                         
                         VStack(spacing: 15) {
