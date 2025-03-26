@@ -167,10 +167,8 @@ struct LogInView: View {
                     return
                 }
                 
-                // Send OTP to email
                 try await SupabaseManager.shared.client.auth.signInWithOTP(email: collegeEmail)
                 
-                // Store credentials for completing login after OTP verification
                 UserDefaults.standard.set(collegeEmail, forKey: "pendingLoginEmail")
                 UserDefaults.standard.set(password, forKey: "pendingLoginPassword")
                 

@@ -18,7 +18,7 @@ struct CategoryBooksView: View {
     }
     
     var body: some View {
-        ScrollView {
+        VStack {
             HStack(spacing: 0) {
                 // Left Rectangle with back button
                 Rectangle()
@@ -95,29 +95,33 @@ struct CategoryBooksView: View {
             .frame(width: 400)
             .padding(.horizontal, -20)
             
-            VStack(spacing: 0) {
-                ForEach(filteredBooks) { book in
-                    NavigationLink(destination: BookDetailView(book: book).environmentObject(SupabaseManager.shared)) {
-                        BookCard(
-                            BookImage: book.imageLink ?? "",
-                            title: book.title,
-                            author: book.author.joined(separator: ", "),
-                            description: book.Description ?? "No description available"
-                        )
-                        .frame(width: 393, height: 90)
-                        .padding(.vertical, 1)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(filteredBooks) { book in
+                        NavigationLink(destination: BookDetailView(book: book).environmentObject(SupabaseManager.shared)) {
+                            BookCard(
+                                BookImage: book.imageLink ?? "",
+                                title: book.title,
+                                author: book.author.joined(separator: ", "),
+                                description: book.Description ?? "No description available"
+                            )
+                            .frame(width: 393, height: 90)
+                            .padding(.vertical, 1)
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .buttonStyle(PlainButtonStyle()) // Ensures the entire BookCard is tappable
                 }
+                .padding(.horizontal)
             }
-            .padding(.horizontal)
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+            .navigationBarBackButtonHidden(true)
+            .navigationBarHidden(true)
+            .navigationTitle(category)
+            .navigationBarTitleDisplayMode(.inline)
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .navigationBarBackButtonHidden(true)
-        .navigationBarHidden(true)
-        .navigationTitle(category)
-        .navigationBarTitleDisplayMode(.inline)
     }
+    
 }
 
 struct CategoryBooksView_Previews: PreviewProvider {
