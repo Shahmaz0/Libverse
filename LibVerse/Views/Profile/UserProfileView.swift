@@ -35,20 +35,7 @@ struct UserProfileView: View {
                     
                     // Action Buttons
                     VStack(spacing: 15) {
-                        // Edit Profile Button
-                        Button(action: {
-                            showEditProfile = true
-                        }) {
-                            HStack {
-                                Image(systemName: "pencil")
-                                Text("Edit Profile")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
-                        }
+                    
                         
                         // Logout Button
                         Button(action: {
