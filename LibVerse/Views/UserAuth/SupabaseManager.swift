@@ -98,9 +98,9 @@ class SupabaseManager: ObservableObject {
     
     func checkEmailExists(_ email: String) async throws -> Bool {
         let response: PostgrestResponse<[Member]> = try await SupabaseManager.shared.client
-            .from("members")
+            .from("Member")
             .select()
-            .eq("college_email", value: email.lowercased())
+            .eq("email", value: email.lowercased())
             .execute()
         
         return !response.value.isEmpty
