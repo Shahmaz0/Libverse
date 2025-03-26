@@ -9,6 +9,7 @@ struct SignUpView: View {
     @State private var collegeName: String = ""
     @State private var collegeEmail: String = ""
     @State private var password: String = ""
+    
     @State private var confirmPassword: String = ""
     @Environment(\.presentationMode) var presentationMode
     @State private var showAlert: Bool = false
