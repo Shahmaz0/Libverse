@@ -168,17 +168,169 @@ struct BookDetailView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal)
+                .padding(.bottom, 10)
 
-                Rectangle()
-                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                    .frame(width: 365, height: 1)
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1.25)
-                            .foregroundColor(.black)
-                            .padding(.top, -1),
-                        alignment: .top
-                    )
+                
+                Button(action: {
+                    print("Button Pressed")
+                }) {
+                    Text("Issue Now")
+                        .frame(width: 325, height: 20)
+                        .padding()
+                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                        .foregroundColor(.white)
+                        .cornerRadius(0)
+                        .border(.black)
+                }
+                
+                HStack(spacing: 0) {
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(width: 118, height: 60)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.trailing, -1),
+                            alignment: .trailing
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.leading, -1),
+                            alignment: .leading
+                        )
+                        .overlay(
+                            VStack {
+                                Button(action: {
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    Image(systemName: "cart.fill")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.black)
+                                }
+                                .padding(.horizontal)
+                                
+                                Text("Add to Cart")
+                                    .font(.custom("Charter", size: 10))
+                            },
+                            alignment: .center
+                        )
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(width: 118, height: 60)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.trailing, -1),
+                            alignment: .trailing
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.leading, -1),
+                            alignment: .leading
+                        )
+                        .overlay(
+                            VStack {
+                                Button(action: {
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    Image(systemName: "heart.fill")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.black)
+                                }
+                                .padding(.horizontal)
+                                
+                                Text("Add to favourites")
+                                    .font(.custom("Charter", size: 10))
+                            },
+                            alignment: .center
+                        )
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(width: 118, height: 60)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.trailing, -1),
+                            alignment: .trailing
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.bottom, -1),
+                            alignment: .bottom
+                        )
+                        .overlay(
+                            Rectangle()
+                                .frame(width: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.leading, -1),
+                            alignment: .leading
+                        )
+                        .overlay(
+                            VStack {
+                                Button(action: {
+                                    presentationMode.wrappedValue.dismiss()
+                                }) {
+                                    Image(systemName: "books.vertical.fill")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .foregroundColor(.black)
+                                }
+                                .padding(.horizontal)
+                                
+                                Text("Add to myShelf")
+                                    .font(.custom("Charter", size: 10))
+                            },
+                            alignment: .center
+                        )
+                    
+                }
+               
                 
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .top, spacing: 10) {
