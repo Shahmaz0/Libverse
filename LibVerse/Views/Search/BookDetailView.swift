@@ -12,6 +12,10 @@ struct BookDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var isFavorite: Bool = false
     @State private var showingQRCode = false
+    @State private var isBookIssued: Bool = false
+    @State private var currentIssueId: UUID?
+    @State private var checkIssueTimer: Timer?
+    @State private var refreshTrigger: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -150,14 +154,18 @@ struct BookDetailView: View {
                     
                     
                     Button(action: {
-                        if let userId = supabaseManager.currentUser?.id {
+                        if isBookIssued {
+                            Task {
+                                await returnBook()
+                            }
+                        } else if let userId = supabaseManager.currentUser?.id {
                             showingQRCode = true
                         }
                     }) {
-                        Text("Issue Now")
+                        Text(isBookIssued ? "Return" : "Issue Now")
                             .frame(width: 325, height: 20)
                             .padding()
-                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .background(isBookIssued ? Color.green : Color(red: 255/255, green: 111/255, blue: 45/255))
                             .foregroundColor(.white)
                             .cornerRadius(0)
                             .border(.black)
@@ -165,6 +173,12 @@ struct BookDetailView: View {
                     .sheet(isPresented: $showingQRCode) {
                         if let userId = supabaseManager.currentUser?.id {
                             QRCodeGeneratorView(book: book, memberId: userId.uuidString)
+                                .onAppear {
+                                    startCheckingIssueStatus()
+                                }
+                                .onDisappear {
+                                    stopCheckingIssueStatus()
+                                }
                         }
                     }
                     
@@ -423,6 +437,7 @@ struct BookDetailView: View {
                 if let userId = supabaseManager.currentUser?.id {
                     Task {
                         do {
+                            // Check favourites
                             let query = supabaseManager.client
                                 .from("Member")
                                 .select()
@@ -432,14 +447,92 @@ struct BookDetailView: View {
                             if let member = response.first {
                                 isFavorite = member.favourites.contains(book.id.uuidString)
                             }
+                            
+                            // Check if book is issued to current user
+                            let issueQuery = supabaseManager.client
+                                .from("BookIssue")
+                                .select()
+                                .eq("memberId", value: userId)
+                                .eq("bookId", value: book.id)
+                                .eq("status", value: "issued")
+                            
+                            let issueResponse: [BookIssue] = try await issueQuery.execute().value
+                            if let issue = issueResponse.first {
+                                isBookIssued = true
+                                currentIssueId = issue.id
+                            }
                         } catch {
-                            print("Error fetching member data: \(error)")
+                            print("Error fetching data: \(error)")
                         }
                     }
                 }
             }
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .id(refreshTrigger)
+    }
+    
+    private func returnBook() async {
+        guard let issueId = currentIssueId else { return }
+        
+        do {
+            let query = try supabaseManager.client
+                .from("BookIssue")
+                .update([
+                    "status": "returned",
+                    "returnDate": ISO8601DateFormatter().string(from: Date())
+                ])
+                .eq("id", value: issueId)
+            
+            try await query.execute()
+            
+            // Update local state
+            isBookIssued = false
+            currentIssueId = nil
+        } catch {
+            print("Error returning book: \(error)")
+        }
+    }
+    
+    private func startCheckingIssueStatus() {
+        // Check every 2 seconds for issue status
+        checkIssueTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            Task {
+                await checkIssueStatus()
+            }
+        }
+    }
+    
+    private func stopCheckingIssueStatus() {
+        checkIssueTimer?.invalidate()
+        checkIssueTimer = nil
+    }
+    
+    private func checkIssueStatus() async {
+        guard let userId = supabaseManager.currentUser?.id else { return }
+        
+        do {
+            let issueQuery = supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .eq("bookId", value: book.id)
+                .eq("status", value: "issued")
+            
+            let issueResponse: [BookIssue] = try await issueQuery.execute().value
+            if let issue = issueResponse.first {
+                // Book has been issued, update UI and close QR view
+                await MainActor.run {
+                    isBookIssued = true
+                    currentIssueId = issue.id
+                    showingQRCode = false
+                    refreshTrigger.toggle()
+                }
+                stopCheckingIssueStatus()
+            }
+        } catch {
+            print("Error checking issue status: \(error)")
+        }
     }
 }
 

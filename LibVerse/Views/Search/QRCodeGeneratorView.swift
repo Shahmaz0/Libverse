@@ -98,13 +98,19 @@ struct QRCodeGeneratorView: View {
     func generateQRCode() -> UIImage {
         let expirationDate = Date().addingTimeInterval(5 * 60)
         
+        // Create a new BookIssue instance
+        let bookIssue = BookIssue(
+            bookId: book.id,
+            memberId: UUID(uuidString: memberId) ?? UUID()
+        )
+        
+        // Convert BookIssue to JSON data
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
         let qrData = """
         {
-            "bookIds": ["\(book.id.uuidString)"],
-            "memberId": "\(memberId)",
-            "issueStatus": "Pending",
-            "issueDate": "\(Date().formatted(date: .numeric, time: .omitted))",
-            "returnDate": "\(Date().addingTimeInterval(30 * 24 * 60 * 60).formatted(date: .numeric, time: .omitted))",
+            "bookIssue": \(String(data: try! encoder.encode(bookIssue), encoding: .utf8)!),
             "expirationDate": "\(expirationDate.timeIntervalSince1970)",
             "timestamp": "\(Date().timeIntervalSince1970)",
             "isValid": \(!isExpired)
