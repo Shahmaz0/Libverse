@@ -1,9 +1,3 @@
-//
-//  HomeView.swift
-//  LibVerse
-//
-//  Created by Shahma Ansari on 19/03/25.
-
 import SwiftUI
 
 // MARK: - Model for Popular Books
@@ -19,52 +13,42 @@ struct PopularBook: Identifiable {
 // MARK: - Main ContentView with TabView
 struct TabBarView: View {
     @State private var selectedTab = 0
-    @State private var showMainApp = true
-    @State private var showUserInitialView = false
-    
     var body: some View {
         TabView(selection: $selectedTab) {
+            HomeView()
+                .tabItem {
+                    Image(systemName: "house.fill")
+                    Text("Home")
+                }
+                .tag(0)
+            
             SearchView()
                 .tabItem {
                     Image(systemName: "magnifyingglass")
                     Text("Search")
                 }
-                .tag(0)
+                .tag(1)
             
             myshelf()
                 .tabItem {
                     Image(systemName: "books.vertical.fill")
                     Text("MyShelf")
                 }
-                .tag(1)
+                .tag(2)
             
             MyBag()
                 .tabItem {
-                    Image(systemName: "bag")
+                    Image(systemName: "bag.fill")
                     Text("MyBag")
-                }
-                .tag(2)
-            
-            UserProfileView(showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
-                .tabItem {
-                    Image(systemName: "person.fill")
-                    Text("Profile")
                 }
                 .tag(3)
             
-//            MyShelfView()
-//                .tabItem {
-//                    Image(systemName: "books.vertical.fill")
-//                    Text("MyShelf")
-//                }
-//                .tag(2)
-            
-//            MyBookView()
-//                .tabItem {
-//                    Image(systemName: "book.fill")
-//                    Text("MyBook")
-//                }
-//                .tag(3)
+            UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
+                .tabItem {
+                    Image(systemName: "person.crop.circle")
+                    Text("Profile")
+                }
+                .tag(4)
         }
         .tint(Color(red:255/255, green: 111/255, blue: 45/255))
         .onAppear {
@@ -82,128 +66,50 @@ struct TabBarView: View {
 
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
-    @StateObject private var viewModel = HomeViewModel()
+    let popularBooks: [PopularBook] = [
+        PopularBook(imageName: "mvc", title: "MVC", author: "R.S. Salaria", rating: 4, isBookmarked: true),
+        PopularBook(imageName: "warandpeace", title: "War and Peace", author: "Leo Tolstoy", rating: 5, isBookmarked: false),
+        PopularBook(imageName: "harrypotter", title: "Harry Potter", author: "J.K. Rowling", rating: 5, isBookmarked: true)
+    ]
     
     var body: some View {
-            NavigationView {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 20) {
-                        if viewModel.isLoading {
-                            ProgressView()
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .padding()
-                        } else {
-                            horizontalBookScroll()
-                        }
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    sectionHeader(title: "Recent Books")
+                    horizontalBookScroll()
+                    
+                    sectionHeader(title: "Browse By Genre")
+                    horizontalBookScroll()
+                }
+                .padding(.vertical)
+            }
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+            .navigationTitle("Madhav")
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button {
+                        // Announcement action
+                    } label: {
+                        Image(systemName: "megaphone.fill")
+                            .symbolRenderingMode(.hierarchical)
+                            .font(.system(size: 20))
+                            .accessibilityLabel("Announcement")
                     }
-                    .padding(.vertical)
-                }
-                .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-                .navigationTitle("Favourites") // Large title here
-                .navigationBarTitleDisplayMode(.large) // Makes it large
-                .onAppear {
-                    viewModel.fetchFavoriteBooks()
-                }
                     
-                HStack(spacing: 0) {
-                    
-//                    Rectangle()
-//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-//                        .frame(width: 65, height: 65)
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.top, -1),
-//                            alignment: .top
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(width: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.trailing, -1),
-//                            alignment: .trailing
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.bottom, -1),
-//                            alignment: .bottom
-//                        )
-//
-//                    Rectangle()
-//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-//                        .frame(maxWidth: .infinity, maxHeight: 65)
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.top, -1),
-//                            alignment: .top
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(width: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.leading, -1),
-//                            alignment: .leading
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(width: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.trailing, -1),
-//                            alignment: .trailing
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.bottom, -1),
-//                            alignment: .bottom
-//                        )
-//                        .overlay(
-//                            Text("LIBVERSE")
-//                                .font(.custom("Charter", size: 23))
-//                                .bold()
-//                                .foregroundColor(.black)
-//                                .padding(.leading, 80),
-//                            alignment: .leading
-//                        )
-//
-//                    Rectangle()
-//                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-//
-//                        .frame(width: 65, height: 65)
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.top, -1),
-//                            alignment: .top
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(width: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.leading, -1),
-//                            alignment: .leading
-//                        )
-//                        .overlay(
-//                            Rectangle()
-//                                .frame(height: 1.25)
-//                                .foregroundColor(.black)
-//                                .padding(.bottom, -1),
-//                            alignment: .bottom
-//                        )
-                       
-                        
+                    Button {
+                        // Profile action
+                    } label: {
+                        Image(systemName: "person.crop.circle")
+                            .symbolRenderingMode(.hierarchical)
+                            .font(.system(size: 22))
+                            .accessibilityLabel("Profile")
+                    }
                 }
-                .frame(width: 400)
-                .padding(.horizontal)
             }
         }
+    }
 
     
     // Helper for section headers
@@ -224,7 +130,8 @@ struct HomeView: View {
     func horizontalBookScroll() -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: -35) {
-                ForEach(viewModel.popularBooks) { book in
+                ForEach(popularBooks) { book in
+                    // Replacing NavigationLink with just the card
                     PopularCard(book: book)
                 }
             }
@@ -245,53 +152,25 @@ struct PopularCard: View {
                     .stroke(Color.black, lineWidth: 1.5)
                     .frame(width: 120, height: 150)
                 
-                if book.imageName.isEmpty || book.imageName == "default_book" {
-                    Image("mvc")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 115, height: 145)
-                        .clipped()
-                        .background(Color.white)
-                } else {
-                    AsyncImage(url: URL(string: book.imageName)) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .frame(width: 115, height: 145)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 115, height: 145)
-                                .clipped()
-                        case .failure:
-                            Image("mvc")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 115, height: 145)
-                                .clipped()
-                        @unknown default:
-                            EmptyView()
-                        }
-                    }
-                }
+                Image(book.imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 115, height: 145)
+                    .clipped()
+                    .background(Color.white)
             }
             .padding(.bottom, 2)
             
-            // Book Title and Author in a VStack with fixed height
-            VStack(alignment: .leading, spacing: 2) {
-                Text(book.title)
-                    .font(.custom("Charter", size: 14))
-                    .lineLimit(2)
-                    .frame(width: 160, alignment: .leading)
-                
-                Text(book.author)
-                    .font(.custom("Charter", size: 13))
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-                    .frame(width: 160, alignment: .leading)
-            }
-            .frame(height: 45) // Fixed height for the text container
+            // Book Title
+            Text(book.title)
+                .font(.custom("Charter", size: 14))
+                .lineLimit(2)
+                .frame(width: 160, alignment: .leading)
+            // Author
+            Text(book.author)
+                .font(.custom("Charter", size: 13))
+                .foregroundColor(.gray)
+                .lineLimit(1)
         }
         .frame(width: 180)
     }
@@ -314,86 +193,4 @@ struct MyBookView: View {
 // MARK: - Preview
 #Preview {
     HomeView()
-}
-
-// MARK: - HomeViewModel
-class HomeViewModel: ObservableObject {
-    @Published var popularBooks: [PopularBook] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    private let supabaseManager = SupabaseManager.shared
-    
-    func fetchFavoriteBooks() {
-        guard let currentUser = supabaseManager.currentUser else {
-            // If no user is logged in, show empty state
-            self.popularBooks = []
-            return
-        }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        Task {
-            do {
-                // 1. Fetch the current user's favorite book IDs from Member table
-                let query = supabaseManager.client
-                    .from("Member")
-                    .select()
-                    .eq("id", value: currentUser.id)
-                
-                let members: [Member] = try await query.execute().value
-                
-                guard let member = members.first else {
-                    await MainActor.run {
-                        self.isLoading = false
-                        self.popularBooks = []
-                    }
-                    return
-                }
-                
-                // 2. If the user has favorites, fetch those books
-                if member.favourites.isEmpty {
-                    await MainActor.run {
-                        self.isLoading = false
-                        self.popularBooks = []
-                    }
-                    return
-                }
-                
-                // Convert array of favorite UUID strings to an array of UUIDs for querying
-                let favoriteIds = member.favourites.compactMap { UUID(uuidString: $0) }
-                
-                // 3. Fetch all favorite books at once using the array of UUIDs
-                let bookQuery = supabaseManager.client
-                    .from("Books")
-                    .select()
-                    .in("id", values: favoriteIds)
-                
-                let books: [Book] = try await bookQuery.execute().value
-                
-                // 4. Convert books to PopularBook objects
-                let favoriteBooks = books.map { book in
-                    PopularBook(
-                        imageName: book.imageLink ?? "default_book",
-                        title: book.title,
-                        author: book.author.joined(separator: ", "),
-                        rating: Int.random(in: 3...5),
-                        isBookmarked: true
-                    )
-                }
-                
-                await MainActor.run {
-                    self.popularBooks = favoriteBooks
-                    self.isLoading = false
-                }
-            } catch {
-                print("Error fetching favorite books: \(error)")
-                await MainActor.run {
-                    self.isLoading = false
-                    self.errorMessage = "Failed to load favorite books. Please try again."
-                    self.popularBooks = []
-                }
-            }
-        }
-    }
 }
