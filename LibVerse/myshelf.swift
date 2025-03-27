@@ -2,7 +2,7 @@
 //  myself.swift
 //  LibVerse
 //
-//  Created by ARYAN SINGHAL on 21/03/25.
+//  Created by Piyush on 21/03/25.
 //
 
 import Foundation
@@ -24,10 +24,10 @@ struct AddModalView: View {
                     .font(.custom("Charter", size: 32))
                     .foregroundColor(Color(hex: "7C4B2D"))
                     .padding(.top, 40)
-                
-                // Text field with black stroke
-                TextField("", text: $selfName)
+            
+                TextField("Hello World", text: $selfName)
                     .textFieldStyle(PlainTextFieldStyle())
+                 
                     .padding()
                     .frame(width: UIScreen.main.bounds.width - 80, height: 50)
                     .background(Color(hex: "FCEFD5"))
@@ -38,7 +38,6 @@ struct AddModalView: View {
                 
                 // Buttons
                 HStack(spacing: 20) {
-                    // Cancel button
                     Button(action: {
                         dismiss()
                     }) {
@@ -52,8 +51,7 @@ struct AddModalView: View {
                                     .stroke(Color.black, lineWidth: 1)
                             )
                     }
-                    
-                    // Create button
+
                     Button(action: {
                         if !selfName.isEmpty {
                             onCreateShelf(selfName)
@@ -113,6 +111,56 @@ struct myshelf: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
+                // Header
+                Rectangle()
+                    .fill(Color(hex: "FCEFD5"))
+                    .frame(maxWidth: .infinity, maxHeight: 60)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+                    .overlay(
+                        HStack {
+                            Text("My Shelf")
+                                .font(.custom("Charter", size: 20))
+                                .bold()
+                                .foregroundColor(.black)
+                                .padding(.leading, 20)
+                            
+                            Spacer()
+                            
+                            // Search button
+                            Button(action: {
+                                isSearching = true
+                            }) {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 24, weight: .medium))
+                                    .foregroundColor(Color.black)
+                            }
+                            .padding(.trailing, 15)
+                            
+                            // Add button
+                            Button(action: {
+                                showingAddModal = true
+                            }) {
+                                Image(systemName: "plus")
+                                    .font(.system(size: 28, weight: .medium))
+                                    .foregroundColor(Color.black)
+                            }
+                            .padding(.trailing, 20)
+                        }
+                    )
+                
                 // Search bar (when searching)
                 if isSearching {
                     HStack {
@@ -139,8 +187,9 @@ struct myshelf: View {
                             .stroke(Color.black, lineWidth: 1)
                     )
                     .padding(.horizontal)
-                    .padding(.top, 50)
+                    .padding(.top, 20)
                 } else {
+                    
                     // Category buttons
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
@@ -172,7 +221,7 @@ struct myshelf: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.top, 50)
+                        .padding(.top, 20)
                     }
                 }
                 
@@ -182,160 +231,147 @@ struct myshelf: View {
                     .frame(width: UIScreen.main.bounds.width, height: 28)
                     .padding(.top, 20)
                 
-                // Scrollable content
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(0..<20) { index in
-                            // Image section
-                            ZStack {
-                                Image("selfbackgroun")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: UIScreen.main.bounds.width - 24, height: 143)
-                                    .clipped()
-                                
-                                HStack(spacing: 14) {
-                                    ForEach(0..<3) { rectangleIndex in
-                                        let bookIndex = (index * 3) + rectangleIndex
-                                        if shouldShowPlusButton(at: bookIndex) {
-                                            Button(action: {
-                                                showingTodoModal = true
-                                            }) {
+                // Add continuous vertical lines that span the entire scroll area
+                ZStack {
+                    // Left vertical line
+                    Rectangle()
+                        .fill(Color(hex: "C89A69"))
+                        .frame(width: 12)
+                        .frame(maxHeight: .infinity)
+                        .position(x: 6, y: UIScreen.main.bounds.height/2.8)
+                        .edgesIgnoringSafeArea(.bottom)
+                    
+                    // Right vertical line
+                    Rectangle()
+                        .fill(Color(hex: "C89A69"))
+                        .frame(width: 12)
+                        .frame(maxHeight: .infinity)
+                        .position(x: UIScreen.main.bounds.width - 6, y: UIScreen.main.bounds.height/2.8)
+                        .edgesIgnoringSafeArea(.bottom)
+                    
+                    // Scrollable content
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(0..<20) { index in
+                                // Image section
+                                ZStack {
+                                    Image("selfbackgroun")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: UIScreen.main.bounds.width - 24, height: 143)
+                                        .clipped()
+                                    
+                                    HStack(spacing: 14) {
+                                        ForEach(0..<3) { rectangleIndex in
+                                            let bookIndex = (index * 3) + rectangleIndex
+                                            if shouldShowPlusButton(at: bookIndex) {
+                                                Button(action: {
+                                                    showingTodoModal = true
+                                                }) {
+                                                    ZStack {
+                                                        Rectangle()
+                                                            .fill(Color.white)
+                                                            .frame(width: 93, height: 120)
+                                                            .shadow(color: .black.opacity(0.8), radius:15, x: 0, y: 13)
+                                                        
+                                                        Image(systemName: "plus")
+                                                            .font(.system(size: 30))
+                                                            .foregroundColor(Color(hex: "875232"))
+                                                    }
+                                                }
+                                            } else if bookIndex < selectedBooks.count {
                                                 ZStack {
                                                     Rectangle()
-                                                        .fill(Color.white)
+                                                        .fill(Color.clear)
                                                         .frame(width: 93, height: 120)
-                                                        .shadow(color: .black.opacity(0.8), radius:15, x: 0, y: 13)
+                                                        .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 13)
                                                     
-                                                    Image(systemName: "plus")
-                                                        .font(.system(size: 30))
-                                                        .foregroundColor(Color(hex: "875232"))
-                                                }
-                                            }
-                                        } else if bookIndex < selectedBooks.count {
-                                            ZStack {
-                                                Rectangle()
-                                                    .fill(Color.clear)
-                                                    .frame(width: 93, height: 120)
-                                                    .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 13)
-                                                
-                                                if let imageUrl = selectedBooks[bookIndex].imageLink {
-                                                    AsyncImage(url: URL(string: imageUrl)) { phase in
-                                                        switch phase {
-                                                        case .success(let image):
-                                                            image
-                                                                .resizable()
-                                                                .scaledToFill()
-                                                                .frame(width: 93, height: 120)
-                                                                .clipped()
-                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                        case .failure:
-                                                            Image("mvc")
-                                                                .resizable()
-                                                                .scaledToFill()
-                                                                .frame(width: 93, height: 120)
-                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                        case .empty:
-                                                            ProgressView()
-                                                        @unknown default:
-                                                            EmptyView()
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            //drag and drop functionality to change the book position.(remove it if the code become to large)
-                                            .offset(y: draggedBook == bookIndex ? -10 : 0)
-                                            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: draggedBook)
-                                            .gesture(
-                                                DragGesture(minimumDistance: 0)
-                                                    .onChanged { gesture in
-                                                        if draggedBook == nil {
-                                                            draggedBook = bookIndex
-                                                        }
-                                                    }
-                                                    .onEnded { gesture in
-                                                        if let draggedIndex = draggedBook {
-                                                            let translation = gesture.translation
-                                                            let newIndex = calculateNewIndex(
-                                                                currentIndex: draggedIndex,
-                                                                translation: translation,
-                                                                totalBooks: selectedBooks.count
-                                                            )
-                                                            
-                                                            if newIndex != draggedIndex {
-                                                                var updatedBooks = selectedBooks
-                                                                let book = updatedBooks.remove(at: draggedIndex)
-                                                                updatedBooks.insert(book, at: newIndex)
-                                                                shelfBooks[selectedCategory] = updatedBooks
+                                                    if let imageUrl = selectedBooks[bookIndex].imageLink {
+                                                        AsyncImage(url: URL(string: imageUrl)) { phase in
+                                                            switch phase {
+                                                            case .success(let image):
+                                                                image
+                                                                    .resizable()
+                                                                    .scaledToFill()
+                                                                    .frame(width: 93, height: 120)
+                                                                    .clipped()
+                                                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                            case .failure:
+                                                                Image("mvc")
+                                                                    .resizable()
+                                                                    .scaledToFill()
+                                                                    .frame(width: 93, height: 120)
+                                                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                            case .empty:
+                                                                ProgressView()
+                                                            @unknown default:
+                                                                EmptyView()
                                                             }
                                                         }
-                                                        draggedBook = nil
                                                     }
-                                            )
-                                            .simultaneousGesture(
-                                                LongPressGesture(minimumDuration: 0.5)
-                                                    .onEnded { _ in
-                                                        bookToDelete = bookIndex
-                                                        showingDeleteAlert = true
-                                                    }
-                                            )
-                                        } else {
-                                            ZStack {
-                                                Rectangle()
-                                                    .fill(Color.clear)
-                                                    .frame(width: 93, height: 120)
-                                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                
-                                                Text("\(bookIndex + 1)")
-                                                    .font(.system(size: 24, weight: .bold))
-                                                    .foregroundColor(Color.clear)
+                                                }
+                                                //drag and drop functionality to change the book position.(remove it if the code become to large)
+//                                                .offset(y: draggedBook == bookIndex ? -10 : 0)
+//                                                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: draggedBook)
+//                                                .gesture(
+//                                                    DragGesture(minimumDistance: 0)
+//                                                        .onChanged { gesture in
+//                                                            if draggedBook == nil {
+//                                                                draggedBook = bookIndex
+//                                                            }
+//                                                        }
+//                                                        .onEnded { gesture in
+//                                                            if let draggedIndex = draggedBook {
+//                                                                let translation = gesture.translation
+//                                                                let newIndex = calculateNewIndex(
+//                                                                    currentIndex: draggedIndex,
+//                                                                    translation: translation,
+//                                                                    totalBooks: selectedBooks.count
+//                                                                )
+//                                                                
+//                                                                if newIndex != draggedIndex {
+//                                                                    var updatedBooks = selectedBooks
+//                                                                    let book = updatedBooks.remove(at: draggedIndex)
+//                                                                    updatedBooks.insert(book, at: newIndex)
+//                                                                    shelfBooks[selectedCategory] = updatedBooks
+//                                                                }
+//                                                            }
+//                                                            draggedBook = nil
+//                                                        }
+//                                                )
+                                                .simultaneousGesture(
+                                                    LongPressGesture(minimumDuration: 0.5)
+                                                        .onEnded { _ in
+                                                            bookToDelete = bookIndex
+                                                            showingDeleteAlert = true
+                                                        }
+                                                )
+                                            } else {
+                                                ZStack {
+                                                    Rectangle()
+                                                        .fill(Color.clear)
+                                                        .frame(width: 93, height: 120)
+                                                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                    
+                                                    Text("\(bookIndex + 1)")
+                                                        .font(.system(size: 24, weight: .bold))
+                                                        .foregroundColor(Color.clear)
+                                                }
                                             }
                                         }
                                     }
+                                    .offset(y: 10)
                                 }
-                                .offset(y: 10)
+                                
+                                // Horizontal line
+                                Rectangle()
+                                    .fill(Color(hex: "C89A69"))
+                                    .frame(width: UIScreen.main.bounds.width - 24, height: 12)
                             }
-                            
-                            // Horizontal line
-                            Rectangle()
-                                .fill(Color(hex: "C89A69"))
-                                .frame(width: UIScreen.main.bounds.width - 24, height: 12)
                         }
                     }
                 }
             }
-            
-            // Left vertical line
-            Rectangle()
-                .fill(Color(hex: "C89A69"))
-                .frame(width: 12, height: UIScreen.main.bounds.height - 100)
-                .position(x: 6, y: (UIScreen.main.bounds.height + 150) / 2)
-            
-            // Right vertical line
-            Rectangle()
-                .fill(Color(hex: "C89A69"))
-                .frame(width: 12, height: UIScreen.main.bounds.height - 100)
-                .position(x: UIScreen.main.bounds.width - 6, y: (UIScreen.main.bounds.height + 150) / 2)
-            
-            // Add button
-            Button(action: {
-                showingAddModal = true
-            }) {
-                Image(systemName: "plus")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(Color(hex: "875232"))
-            }
-            .position(x: UIScreen.main.bounds.width - 40, y: 20)
-            
-            // Search button
-            Button(action: {
-                isSearching = true
-            }) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundColor(Color(hex: "875232"))
-            }
-            .position(x: UIScreen.main.bounds.width - 80, y: 20)
         }
         .sheet(isPresented: $showingAddModal) {
             AddModalView { newShelfName in
