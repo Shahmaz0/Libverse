@@ -8,61 +8,69 @@ struct UserProfileView: View {
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     
+    init(showMainApp: Binding<Bool>, showUserInitialView: Binding<Bool>) {
+        _showMainApp = showMainApp
+        _showUserInitialView = showUserInitialView
+        
+        // Customize segmented control appearance
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.black], for: .normal)
+    }
+    
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Profile Header
-                    profileHeader
-                    
-                    // Fines Card
-                    finesCard
-                    
-                    // Tab Picker
-                    Picker("View", selection: $selectedTab) {
-                        Text("Borrowed Books").tag(0)
-                        Text("Account Details").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    
-                    // Content based on selected tab
-                    if selectedTab == 0 {
-                        borrowedBooksList
-                    } else {
-                        accountDetails
-                    }
-                    
-                    // Action Buttons
-                    VStack(spacing: 15) {
-                    
+            ZStack(alignment: .bottom) {
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Profile Header
+                        profileHeader
                         
-                        // Logout Button
-                        Button(action: {
-                            Task {
-                                try? await SupabaseManager.shared.signOut()
-                                showMainApp = false
-                                showUserInitialView = true
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "rectangle.portrait.and.arrow.right")
-                                Text("Logout")
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.red)
-                            .foregroundColor(.white)
-                            .cornerRadius(10)
+                        // Fines Card
+                        finesCard
+                        
+                        // Tab Picker
+                        tabPicker
+                        
+                        // Content based on selected tab
+                        if selectedTab == 0 {
+                            borrowedBooksList
+                        } else {
+                            accountDetails
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.top, 10)
+                    .padding(.vertical)
+                    .padding(.bottom, 80) // Add padding for the logout button
                 }
-                .padding(.vertical)
+                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                
+                // Fixed Logout Button at bottom
+                VStack {
+                    Button(action: {
+                        Task {
+                            try? await SupabaseManager.shared.signOut()
+                            showMainApp = false
+                            showUserInitialView = true
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                            Text("Logout")
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                        .foregroundColor(.white)
+                        .overlay(RoundedRectangle(cornerRadius: 0)
+                            .stroke(Color.black, lineWidth: 1.25))
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 20)
+                }
+                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             }
-            .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-            .navigationTitle("Profile")
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+            .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showEditProfile) {
                 EditProfileView(profile: profile)
@@ -74,53 +82,33 @@ struct UserProfileView: View {
         Button(action: {
             showEditProfile = true
         }) {
-            VStack(spacing: 15) {
-                // Profile Image Container
-                ZStack {
-                    // Square background
-                    Rectangle()
-                        .fill(Color.white)
-                        .frame(width: 120, height: 120)
-                        .overlay(
-                            Rectangle()
-                                .stroke(Color.black, lineWidth: 1.25)
-                        )
-                    
-                    // Profile Image
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .foregroundColor(.blue)
-                }
-                .padding(.top, 10)
+            HStack(spacing: 15) {
+                // Profile Image
+                Image(systemName: "person.circle.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+                    .clipShape(Circle())
                 
                 // User Info
-                VStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 5) {
                     Text("\(profile.firstName) \(profile.lastName)")
-                        .font(.custom("Courier New", size: 20))
-                        .bold()
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
                     
-                    Text(profile.department)
-                        .font(.custom("Courier", size: 16))
+                    Text(profile.email)
+                        .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.secondary)
                 }
-                .padding(.bottom, 10)
                 
-                // Edit indicator
-                HStack {
-                    Image(systemName: "pencil.circle.fill")
-                        .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
-                    Text("Tap to edit profile")
-                        .font(.custom("Courier", size: 14))
-                        .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
-                }
-                .padding(.bottom, 5)
+                Spacer()
             }
-            .frame(maxWidth: .infinity)
-            .background(Color.white)
-            .cornerRadius(15)
-            .shadow(radius: 2)
+            .padding()
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+            .cornerRadius(0)
+            .overlay(RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.black, lineWidth: 1.25))
             .padding(.horizontal)
         }
         .buttonStyle(PlainButtonStyle())
@@ -128,34 +116,21 @@ struct UserProfileView: View {
     
     private var finesCard: some View {
         HStack {
-            VStack(alignment: .leading) {
-                Text("Current Fines")
-                    .font(.headline)
-                Text("₹\(String(format: "%.2f", profile.fines))")
-                    .font(.title2)
-                    .bold()
-                    .foregroundColor(profile.fines > 0 ? .red : .green)
-            }
+            Text("Current Fines")
+                .font(.headline)
             
             Spacer()
             
-            Button(action: {
-                // Handle payment action
-            }) {
-                Text("Pay Now")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(profile.fines > 0 ? Color.red : Color.green)
-                    .cornerRadius(8)
-            }
-            .disabled(profile.fines == 0)
+            Text("₹\(String(format: "%.2f", profile.fines))")
+                .font(.title2)
+                .bold()
+                .foregroundColor(profile.fines > 0 ? .black : .black)
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(radius: 2)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .cornerRadius(0)
+        .overlay(RoundedRectangle(cornerRadius: 0)
+            .stroke(Color.black, lineWidth: 1.25))
         .padding(.horizontal)
     }
     
@@ -170,15 +145,23 @@ struct UserProfileView: View {
     
     private var accountDetails: some View {
         VStack(spacing: 20) {
-            DetailRow(title: "User ID", value: profile.userId)
             DetailRow(title: "Email", value: profile.email)
-            DetailRow(title: "Department", value: profile.department)
             DetailRow(title: "Enrollment Number", value: profile.enrollmentNumber)
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(radius: 2)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .cornerRadius(0)
+        .overlay(RoundedRectangle(cornerRadius: 0)
+            .stroke(Color.black, lineWidth: 1.25))
+        .padding(.horizontal)
+    }
+    
+    private var tabPicker: some View {
+        Picker("View", selection: $selectedTab) {
+            Label("Borrowed Books", systemImage: "book.fill").tag(0)
+            Label("Account Details", systemImage: "person.fill").tag(1)
+        }
+        .pickerStyle(.segmented)
         .padding(.horizontal)
     }
 }
@@ -188,27 +171,37 @@ struct BorrowedBookCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(book.title)
-                .font(.headline)
-            
-            Text(book.author)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
             HStack {
-                Image(systemName: book.isOverdue ? "exclamationmark.triangle.fill" : "clock.fill")
-                    .foregroundColor(book.isOverdue ? .red : .green)
-                
-                Text(book.isOverdue ? "Overdue by \(abs(book.daysRemaining)) days" : "Due in \(book.daysRemaining) days")
-                    .font(.subheadline)
-                    .foregroundColor(book.isOverdue ? .red : .green)
+                VStack {
+                    HStack {
+                        Text(book.title)
+                            .font(.headline)
+                            .padding(.leading, 0)
+                        
+                        Spacer()
+                        HStack {
+                            Image(systemName: book.isOverdue ? "exclamationmark.triangle.fill" : "clock.fill")
+                                .foregroundColor(book.isOverdue ? .red : .black)
+                            
+                            Text(book.isOverdue ? "Overdue by \(abs(book.daysRemaining)) days" : "Due in \(book.daysRemaining) days")
+                                .font(.subheadline)
+                                .foregroundColor(book.isOverdue ? .red : .black)
+                        }
+                    }
+                    
+                    Text(book.author)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .padding(.leading, -165)
+                }
             }
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white)
-        .cornerRadius(15)
-        .shadow(radius: 2)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .cornerRadius(0)
+        .overlay(RoundedRectangle(cornerRadius: 0)
+            .stroke(Color.black, lineWidth: 1.25))
     }
 }
 
@@ -230,46 +223,59 @@ struct DetailRow: View {
     }
 }
 
-// Add EditProfileView
 struct EditProfileView: View {
     let profile: UserProfile
     @Environment(\.dismiss) private var dismiss
     @State private var firstName: String
     @State private var lastName: String
-    @State private var department: String
     @State private var enrollmentNumber: String
     @State private var showAlert = false
     @State private var alertMessage = ""
-    
+
     init(profile: UserProfile) {
         self.profile = profile
         _firstName = State(initialValue: profile.firstName)
         _lastName = State(initialValue: profile.lastName)
-        _department = State(initialValue: profile.department)
         _enrollmentNumber = State(initialValue: profile.enrollmentNumber)
     }
-    
+
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Profile Image
-                    Image(systemName: "person.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 100, height: 100)
-                        .foregroundColor(.blue)
-                        .padding(.top)
-                    
+                    // Profile Image with Edit Icon
+                    ZStack(alignment: .bottomTrailing) {
+                        Image(systemName: "person.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .clipShape(Circle())
+                            .padding(.top)
+
+                        Button(action: {
+                            // Action to edit profile image
+                        }) {
+                            Image(systemName: "pencil")
+                                .foregroundColor(.white)
+                                .padding(10)
+                                .background(Color.black)
+                                .clipShape(Circle())
+                        }
+                        .offset(x: 8, y: 8)
+                    }
+
                     // Edit Form
                     VStack(spacing: 15) {
                         EditField(title: "First Name", text: $firstName)
                         EditField(title: "Last Name", text: $lastName)
-                        EditField(title: "Department", text: $department)
                         EditField(title: "Enrollment Number", text: $enrollmentNumber)
                     }
                     .padding()
-                    
+                    .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .cornerRadius(0)
+                    .padding(.horizontal)
+
                     // Save Button
                     Button(action: saveChanges) {
                         Text("Save Changes")
@@ -277,12 +283,14 @@ struct EditProfileView: View {
                             .padding()
                             .background(Color(red: 255/255, green: 111/255, blue: 45/255))
                             .foregroundColor(.white)
-                            .cornerRadius(10)
+                            .cornerRadius(0)
+                            .overlay(RoundedRectangle(cornerRadius: 0)
+                                .stroke(Color.black, lineWidth: 1.25))
                     }
                     .padding(.horizontal)
                 }
+                .padding()
             }
-            .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .navigationTitle("Edit Profile")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -290,6 +298,7 @@ struct EditProfileView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                 }
             }
             .alert("Profile Update", isPresented: $showAlert) {
@@ -301,34 +310,39 @@ struct EditProfileView: View {
             } message: {
                 Text(alertMessage)
             }
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         }
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .edgesIgnoringSafeArea(.all)
     }
-    
+
     private func saveChanges() {
-        // Here you would typically update the profile in your database
-        // For now, we'll just show a success message
         alertMessage = "Profile updated successfully!"
         showAlert = true
     }
-}
 
-struct EditField: View {
-    let title: String
-    @Binding var text: String
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(title)
-                .font(.custom("Courier", size: 16))
-                .foregroundColor(.secondary)
-            
-            TextField("", text: $text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .font(.custom("Courier", size: 16))
+    struct EditField: View {
+        let title: String
+        @Binding var text: String
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title)
+                    .font(.custom("Courier", size: 16))
+                    .foregroundColor(.secondary)
+
+                TextField("", text: $text)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .padding()
+                    .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .overlay(RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color.black, lineWidth: 1.25))
+                    .font(.custom("Courier", size: 16))
+            }
         }
     }
 }
 
 #Preview {
     UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
-} 
+}
