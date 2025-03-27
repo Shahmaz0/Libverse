@@ -17,6 +17,7 @@ struct BookDetailView: View {
     @State private var checkIssueTimer: Timer?
     @State private var refreshTrigger: Bool = false
     @State private var isInBag: Bool = false
+    @State private var showingReturnQRCode = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -156,9 +157,7 @@ struct BookDetailView: View {
                     
                     Button(action: {
                         if isBookIssued {
-                            Task {
-                                await returnBook()
-                            }
+                            showingReturnQRCode = true
                         } else if let userId = supabaseManager.currentUser?.id {
                             showingQRCode = true
                         }
@@ -180,6 +179,11 @@ struct BookDetailView: View {
                                 .onDisappear {
                                     stopCheckingIssueStatus()
                                 }
+                        }
+                    }
+                    .sheet(isPresented: $showingReturnQRCode) {
+                        if let issueId = currentIssueId {
+                            ReturnQRCodeView(issueId: issueId)
                         }
                     }
                     
@@ -485,28 +489,6 @@ struct BookDetailView: View {
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .id(refreshTrigger)
-    }
-    
-    private func returnBook() async {
-        guard let issueId = currentIssueId else { return }
-        
-        do {
-            let query = try supabaseManager.client
-                .from("BookIssue")
-                .update([
-                    "status": "returned",
-                    "returnDate": ISO8601DateFormatter().string(from: Date())
-                ])
-                .eq("id", value: issueId)
-            
-            try await query.execute()
-            
-            // Update local state
-            isBookIssued = false
-            currentIssueId = nil
-        } catch {
-            print("Error returning book: \(error)")
-        }
     }
     
     private func startCheckingIssueStatus() {
