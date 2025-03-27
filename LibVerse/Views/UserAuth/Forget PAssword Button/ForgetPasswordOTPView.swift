@@ -116,7 +116,6 @@ struct ForgotPasswordOTPView: View {
         .navigationDestination(isPresented: $navigateToReset) {
             UserNewPasswordView(navigationPath: .constant(NavigationPath()), showMainApp: .constant(false), showUserInitialView: .constant(true))
         }
-        .navigationBarBackButtonHidden(true)
         .alert("Alert", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {

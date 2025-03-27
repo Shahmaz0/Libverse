@@ -14,281 +14,424 @@ struct BookDetailView: View {
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .center, spacing: 16) {
-                HStack(spacing: 0) {
-                    Rectangle()
-                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                        .frame(width: 65, height: 60)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.top, -1),
-                            alignment: .top
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.trailing, -1),
-                            alignment: .trailing
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.bottom, -1),
-                            alignment: .bottom
-                        )
-                        .overlay(
-                            Button(action: {
-                                presentationMode.wrappedValue.dismiss()
-                            }) {
-                                Image(systemName: "arrow.left")
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
-                                    .foregroundColor(.black)
-                            }
-                            .padding(.leading, 20),
-                            alignment: .leading
-                        )
-                    
-                    Rectangle()
-                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                        .frame(maxWidth: .infinity, maxHeight: 60)
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.top, -1),
-                            alignment: .top
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(width: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.leading, -1),
-                            alignment: .leading
-                        )
-                        .overlay(
-                            Rectangle()
-                                .frame(height: 1.25)
-                                .foregroundColor(.black)
-                                .padding(.bottom, -1),
-                            alignment: .bottom
-                        )
-                        
-                }
-                .overlay(
-                    Text("Book Details")
-                        .font(.custom("Charter", size: 20))
-                        .bold()
-                        .foregroundColor(.black),
-                    alignment: .center
-                )
-                .frame(width: 400)
-                .padding(.horizontal, -20)
-                
-                HStack(alignment: .top, spacing: 16) {
-                    ZStack {
+        VStack {
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .frame(width: 65, height: 60)
+                    .overlay(
                         Rectangle()
-                            .stroke(Color.black, lineWidth: 0.5)
-                            .frame(width: 120, height: 120)
-
-                        if book.imageLink?.isEmpty ?? true {
-                            Image("mvc")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 110, height: 110)
-                                .background(Color.white)
-                                .clipped()
-                        } else {
-                            AsyncImage(url: URL(string: book.imageLink!)) { phase in
-                                switch phase {
-                                case .empty:
-                                    ProgressView()
-                                        .frame(width: 112, height: 112)
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 112, height: 112)
-                                        .clipped()
-                                case .failure:
-                                    Image("mvc")
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 112, height: 112)
-                                        .clipped()
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                        }
-                    }
-                    .frame(width: 120, height: 120)
-                    .padding(.leading, 5)
-
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(book.title)
-                            .font(.custom("Charter", size: 15))
-                            .fontWeight(.semibold)
+                            .frame(height: 1.25)
                             .foregroundColor(.black)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text("By: \(book.author.joined(separator: ", "))")
-                            .font(.custom("Charter", size: 13))
-                            .foregroundColor(.gray)
-
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(width: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.trailing, -1),
+                        alignment: .trailing
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+                    .overlay(
                         Button(action: {
-                            isFavorite.toggle()
-                            Task {
-                                if let userId = supabaseManager.currentUser?.id {
-                                    do {
-                                        try await supabaseManager.updateFavourites(
-                                            userId: userId,
-                                            bookId: book.id,
-                                            isFavourite: isFavorite
-                                        )
-                                    } catch {
-                                        print("Error updating favourites: \(error)")
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "arrow.left")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.black)
+                        }
+                            .padding(.leading, 20),
+                        alignment: .leading
+                    )
+                
+                Rectangle()
+                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .frame(maxWidth: .infinity, maxHeight: 60)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(width: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.leading, -1),
+                        alignment: .leading
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+                
+            }
+            .overlay(
+                Text("Book Details")
+                    .font(.custom("Charter", size: 20))
+                    .bold()
+                    .foregroundColor(.black),
+                alignment: .center
+            )
+            .frame(width: 400)
+            .padding(.horizontal, -20)
+            ScrollView {
+                VStack(alignment: .center, spacing: 16) {
+                    HStack(alignment: .top, spacing: 16) {
+                        ZStack {
+                            Rectangle()
+                                .stroke(Color.black, lineWidth: 0.5)
+                                .frame(width: 120, height: 120)
+                            
+                            if book.imageLink?.isEmpty ?? true {
+                                Image("mvc")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 110, height: 110)
+                                    .background(Color.white)
+                                    .clipped()
+                            } else {
+                                AsyncImage(url: URL(string: book.imageLink!)) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                            .frame(width: 112, height: 112)
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 112, height: 112)
+                                            .clipped()
+                                    case .failure:
+                                        Image("mvc")
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 112, height: 112)
+                                            .clipped()
+                                    @unknown default:
+                                        EmptyView()
                                     }
                                 }
                             }
-                        }) {
-                            Image(systemName: isFavorite ? "heart.fill" : "heart")
-                                .resizable()
-                                .frame(width: 22, height: 22)
-                                .foregroundColor(.orange)
                         }
-                        .padding(.top, 8)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal)
-
-                Rectangle()
-                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                    .frame(width: 365, height: 1)
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1.25)
-                            .foregroundColor(.black)
-                            .padding(.top, -1),
-                        alignment: .top
-                    )
-                
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("Genre")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading)
+                        .frame(width: 120, height: 120)
+                        .padding(.leading, 5)
                         
-                        Text(book.genre)
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(book.title)
+                                .font(.custom("Charter", size: 15))
+                                .fontWeight(.semibold)
+                                .foregroundColor(.black)
+                                .fixedSize(horizontal: false, vertical: true)
+                            
+                            Text("By: \(book.author.joined(separator: ", "))")
+                                .font(.custom("Charter", size: 13))
+                                .foregroundColor(.gray)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("Shelf Location")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading)
-                        
-                        Text(book.shelfLocation ?? "N/A")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("Available Copies")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading)
-                        
-                        Text("\(book.availableCopies)")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("Publisher")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading)
-                        
-                        Text(book.publisher ?? "N/A")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("Released")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(width: 120, alignment: .leading)
-                        
-                        Text(book.publicationDate)
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .padding(.leading, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Rectangle()
-                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-                    .frame(width: 365, height: 1)
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1.25)
-                            .foregroundColor(.black)
-                            .padding(.top, -1),
-                        alignment: .top
-                    )
-                
-                Text(book.Description ?? "No description available")
-                    .font(.custom("Charter", size: 13))
-                    .foregroundColor(.black)
-                    .lineLimit(nil)
+                    .frame(maxWidth: .infinity)
                     .padding(.horizontal)
-                    .frame(width: 400, alignment: .center)
+                    .padding(.bottom, 10)
+                    
+                    
+                    Button(action: {
+                        print("Button Pressed")
+                    }) {
+                        Text("Issue Now")
+                            .frame(width: 325, height: 20)
+                            .padding()
+                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .foregroundColor(.white)
+                            .cornerRadius(0)
+                            .border(.black)
+                    }
+                    
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                            .frame(width: 118, height: 60)
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.top, -1),
+                                alignment: .top
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.trailing, -1),
+                                alignment: .trailing
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.bottom, -1),
+                                alignment: .bottom
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.leading, -1),
+                                alignment: .leading
+                            )
+                            .overlay(
+                                VStack {
+                                    Button(action: {
+                                        presentationMode.wrappedValue.dismiss()
+                                    }) {
+                                        Image(systemName: "bag")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.black)
+                                    }
+                                    .padding(.horizontal)
+                                    
+                                    Text("Add to Cart")
+                                        .font(.custom("Charter", size: 10))
+                                },
+                                alignment: .center
+                            )
+                        Rectangle()
+                            .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                            .frame(width: 118, height: 60)
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.top, -1),
+                                alignment: .top
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.trailing, -1),
+                                alignment: .trailing
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.bottom, -1),
+                                alignment: .bottom
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.leading, -1),
+                                alignment: .leading
+                            )
+                            .overlay(
+                                VStack {
+                                    Button(action: {
+                                        isFavorite.toggle()
+                                        Task {
+                                            if let userId = supabaseManager.currentUser?.id {
+                                                do {
+                                                    try await supabaseManager.updateFavourites(
+                                                        userId: userId,
+                                                        bookId: book.id,
+                                                        isFavourite: isFavorite
+                                                    )
+                                                } catch {
+                                                    print("Error updating favourites: \(error)")
+                                                }
+                                            }
+                                        }
+                                    }) {
+                                        Image(systemName: isFavorite ? "heart.fill" : "heart")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.black)
+                                    }
+                                    .padding(.horizontal)
+                                    
+                                    Text("Add to favourites")
+                                        .font(.custom("Charter", size: 10))
+                                },
+                                alignment: .center
+                            )
+                        Rectangle()
+                            .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                            .frame(width: 118, height: 60)
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.top, -1),
+                                alignment: .top
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.trailing, -1),
+                                alignment: .trailing
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(height: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.bottom, -1),
+                                alignment: .bottom
+                            )
+                            .overlay(
+                                Rectangle()
+                                    .frame(width: 1.25)
+                                    .foregroundColor(.black)
+                                    .padding(.leading, -1),
+                                alignment: .leading
+                            )
+                            .overlay(
+                                VStack {
+                                    Button(action: {
+                                        presentationMode.wrappedValue.dismiss()
+                                    }) {
+                                        Image(systemName: "books.vertical.fill")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.black)
+                                    }
+                                    .padding(.horizontal)
+                                    
+                                    Text("Add to myShelf")
+                                        .font(.custom("Charter", size: 10))
+                                },
+                                alignment: .center
+                            )
+                        
+                    }
+                    
+                    
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("Genre")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 120, alignment: .leading)
+                            
+                            Text(book.genre)
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("Shelf Location")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 120, alignment: .leading)
+                            
+                            Text(book.shelfLocation ?? "N/A")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("Available Copies")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 120, alignment: .leading)
+                            
+                            Text("\(book.availableCopies)")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("Publisher")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 120, alignment: .leading)
+                            
+                            Text(book.publisher ?? "N/A")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        
+                        HStack(alignment: .top, spacing: 10) {
+                            Text("Released")
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(width: 120, alignment: .leading)
+                            
+                            Text(book.publicationDate)
+                                .font(.custom("Charter", size: 14))
+                                .foregroundColor(.black)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .padding(.leading, 20)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                        .frame(width: 365, height: 1)
+                        .overlay(
+                            Rectangle()
+                                .frame(height: 1.25)
+                                .foregroundColor(.black)
+                                .padding(.top, -1),
+                            alignment: .top
+                        )
+                    
+                    Text(book.Description ?? "No description available")
+                        .font(.custom("Charter", size: 13))
+                        .foregroundColor(.black)
+                        .lineLimit(nil)
+                        .padding(.horizontal)
+                        .frame(width: 400, alignment: .center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.top)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.top)
+            .navigationBarHidden(true)
+            .navigationBarBackButtonHidden(true)
+            .edgesIgnoringSafeArea(.bottom)
+            .onAppear {
+                // Check if the book is already in favourites
+                if let userId = supabaseManager.currentUser?.id {
+                    Task {
+                        do {
+                            let query = supabaseManager.client
+                                .from("Member")
+                                .select()
+                                .eq("id", value: userId)
+                            
+                            let response: [Member] = try await query.execute().value
+                            if let member = response.first {
+                                isFavorite = member.favourites.contains(book.id.uuidString)
+                            }
+                        } catch {
+                            print("Error fetching member data: \(error)")
+                        }
+                    }
+                }
+            }
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .navigationBarHidden(true)
-        .navigationBarBackButtonHidden(true)
-        .edgesIgnoringSafeArea(.bottom)
-        .onAppear {
-            // Check if the book is already in favourites
-            if let userId = supabaseManager.currentUser?.id {
-                Task {
-                    do {
-                        let query = supabaseManager.client
-                            .from("Member")
-                            .select()
-                            .eq("id", value: userId)
-                        
-                        let response: [Member] = try await query.execute().value
-                        if let member = response.first {
-                            isFavorite = member.favourites.contains(book.id.uuidString)
-                        }
-                    } catch {
-                        print("Error fetching member data: \(error)")
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -19,6 +19,9 @@ struct PopularBook: Identifiable {
 // MARK: - Main ContentView with TabView
 struct TabBarView: View {
     @State private var selectedTab = 0
+    @State private var showMainApp = true
+    @State private var showUserInitialView = false
+    
     var body: some View {
         TabView(selection: $selectedTab) {
             SearchView()
@@ -35,6 +38,12 @@ struct TabBarView: View {
                 }
                 .tag(1)
             
+            UserProfileView(showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+                .tabItem {
+                    Image(systemName: "person.fill")
+                    Text("Profile")
+                }
+                .tag(2)
             
 //            MyShelfView()
 //                .tabItem {

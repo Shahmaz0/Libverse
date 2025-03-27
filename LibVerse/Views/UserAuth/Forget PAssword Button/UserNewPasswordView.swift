@@ -20,6 +20,7 @@ struct UserNewPasswordView: View {
     @State private var showNewPassword = false
     @State private var showConfirmPassword = false
     @Environment(\.presentationMode) var presentationMode
+    @State private var navigateToLogin = false
     
     var body: some View {
         VStack {
@@ -70,17 +71,17 @@ struct UserNewPasswordView: View {
             Spacer()
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .navigationDestination(isPresented: $navigateToLogin) {
+                        LogInView()
+        }
         .alert("Password Reset", isPresented: $showAlert) {
             Button("OK") {
                 if alertMessage == "Password updated successfully!" {
-                    navigationPath.removeLast(navigationPath.count) // Pops to root
-                    showUserInitialView = true
-                }
+                    navigateToLogin = true               }
             }
         } message: {
             Text(alertMessage)
         }
-        .navigationBarBackButtonHidden(true)
     }
         
         private func customTextField(placeholder: String, text: Binding<String>, isSecure: Bool) -> some View {

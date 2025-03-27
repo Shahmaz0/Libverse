@@ -100,7 +100,7 @@ class SupabaseManager: ObservableObject {
         let response: PostgrestResponse<[Member]> = try await SupabaseManager.shared.client
             .from("Member")
             .select()
-            .eq("college_email", value: email.lowercased())
+            .eq("email", value: email.lowercased())
             .execute()
         
         return !response.value.isEmpty
@@ -233,37 +233,55 @@ class SupabaseManager: ObservableObject {
         try await SupabaseManager.shared.client.auth.resetPasswordForEmail(email)
     }
     
-        
-        func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {
-            // Fetch the current member data
-            let query = client
-                .from("Member")
-                .select()
-                .eq("id", value: userId)
-            
-            let response: [Member] = try await query.execute().value
-            
-            guard var member = response.first else {
-                throw NSError(domain: "Supabase", code: -1, userInfo: [NSLocalizedDescriptionKey: "Member not found"])
-            }
-            
-            // Update the favourites array
-            if isFavourite {
-                if !member.favourites.contains(bookId.uuidString) {
-                    member.favourites.append(bookId.uuidString)
-                }
-            } else {
-                member.favourites.removeAll { $0 == bookId.uuidString }
-            }
-            
-            // Update the member in the database
-            try await client
-                .from("Member")
-                .update(["favourites": member.favourites])
-                .eq("id", value: userId)
-                .execute()
-            
-            print("Favourites updated successfully for user: \(userId)")
-        }
-    }
+    func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {
+           // First, try to fetch the current member data
+           let query = client
+               .from("Member")
+               .select()
+               .eq("id", value: userId)
+           
+           do {
+               let response: [Member] = try await query.execute().value
+               
+               // If member doesn't exist, create a new record
+               if response.isEmpty {
+                   let newMember = Member(
+                       id: userId,
+                       email: currentUser?.email ?? "",
+                       firstName: "",
+                       lastName: "",
+                       favourites: isFavourite ? [bookId.uuidString] : []
+                   )
+                   
+                   try await client
+                       .from("Member")
+                       .insert(newMember)
+                       .execute()
+               } else {
+                   // Member exists, update their favorites
+                   var member = response[0]
+                   let bookIdString = bookId.uuidString
+                   
+                   if isFavourite {
+                       if !member.favourites.contains(bookIdString) {
+                           member.favourites.append(bookIdString)
+                       }
+                   } else {
+                       member.favourites.removeAll { $0 == bookIdString }
+                   }
+                   
+                   try await client
+                       .from("Member")
+                       .update(["favourites": member.favourites])
+                       .eq("id", value: userId)
+                       .execute()
+               }
+               
+               print("Favourites updated successfully for user: \(userId)")
+           } catch {
+               print("Error updating favourites: \(error)")
+               throw error
+           }
+       }
+}
 
