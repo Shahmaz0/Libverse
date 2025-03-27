@@ -17,6 +17,48 @@ struct BookIssue: Codable, Identifiable {
     let actualReturnDate: Date?
     let overdueDays: Int?
     
+    enum CodingKeys: String, CodingKey {
+        case id
+        case bookId
+        case memberId
+        case issueStatus = "status"
+        case issueDate
+        case returnDate
+        case actualReturnDate
+        case overdueDays
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        let dateFormatter = ISO8601DateFormatter()
+        
+        id = try container.decode(UUID.self, forKey: .id)
+        bookId = try container.decode(UUID.self, forKey: .bookId)
+        memberId = try container.decode(UUID.self, forKey: .memberId)
+        issueStatus = try container.decode(IssueStatus.self, forKey: .issueStatus)
+        
+        if let issueDateString = try container.decodeIfPresent(String.self, forKey: .issueDate) {
+            issueDate = dateFormatter.date(from: issueDateString) ?? Date()
+        } else {
+            issueDate = Date()
+        }
+        
+        if let returnDateString = try container.decodeIfPresent(String.self, forKey: .returnDate) {
+            returnDate = dateFormatter.date(from: returnDateString) ?? Date()
+        } else {
+            returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+        }
+        
+        if let actualReturnDateString = try container.decodeIfPresent(String.self, forKey: .actualReturnDate) {
+            actualReturnDate = dateFormatter.date(from: actualReturnDateString)
+        } else {
+            actualReturnDate = nil
+        }
+        
+        overdueDays = try container.decodeIfPresent(Int.self, forKey: .overdueDays)
+    }
+    
     init(bookId: UUID, memberId: UUID) {
         self.id = UUID()
         self.bookId = bookId

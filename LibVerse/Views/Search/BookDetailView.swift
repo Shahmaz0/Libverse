@@ -469,7 +469,7 @@ struct BookDetailView: View {
                                 .select()
                                 .eq("memberId", value: userId)
                                 .eq("bookId", value: book.id)
-                                .eq("status", value: "issued")
+                                .eq("status", value: "Issued")
                             
                             let issueResponse: [BookIssue] = try await issueQuery.execute().value
                             if let issue = issueResponse.first {
@@ -532,7 +532,7 @@ struct BookDetailView: View {
                 .select()
                 .eq("memberId", value: userId)
                 .eq("bookId", value: book.id)
-                .eq("status", value: "issued")
+                .eq("status", value: "Issued")
             
             let issueResponse: [BookIssue] = try await issueQuery.execute().value
             if let issue = issueResponse.first {
