@@ -16,15 +16,17 @@ struct Member: Codable {
     let firstName: String
     let lastName: String
     var favourites: [String]
+    var myBag: [String]
     let created_at: Date?
     
-    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], created_at: Date? = nil) {
+    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], created_at: Date? = nil) {
         self.id = id
         self.email = email
         self.password = password
         self.firstName = firstName
         self.lastName = lastName
         self.favourites = favourites
+        self.myBag = mybag
         self.created_at = created_at
     }
 }
@@ -233,55 +235,106 @@ class SupabaseManager: ObservableObject {
         try await SupabaseManager.shared.client.auth.resetPasswordForEmail(email)
     }
     
+    
+    func updateMyBag(userId: UUID, bookId: UUID, addToBag: Bool) async throws {
+        let query = client
+            .from("Member")
+            .select()
+            .eq("id", value: userId)
+        
+        do {
+            let response: [Member] = try await query.execute().value
+            
+            // If member doesn't exist, create a new record
+            if response.isEmpty {
+                let newMember = Member(
+                    id: userId,
+                    email: currentUser?.email ?? "",
+                    firstName: "",
+                    lastName: "",
+                    favourites: [],
+                    mybag: addToBag ? [bookId.uuidString] : []
+                )
+                
+                try await client
+                    .from("Member")
+                    .insert(newMember)
+                    .execute()
+            } else {
+                // Member exists, update their bag
+                var member = response[0]
+                let bookIdString = bookId.uuidString
+                
+                if addToBag {
+                    if !member.myBag.contains(bookIdString) {
+                        member.myBag.append(bookIdString)
+                    }
+                } else {
+                    member.myBag.removeAll { $0 == bookIdString }
+                }
+                
+                try await client
+                    .from("Member")
+                    .update(["myBag": member.myBag])
+                    .eq("id", value: userId)
+                    .execute()
+            }
+            
+            print("MyBag updated successfully for user: \(userId)")
+        } catch {
+            print("Error updating myBag: \(error)")
+            throw error
+        }
+    }
+    
     func updateFavourites(userId: UUID, bookId: UUID, isFavourite: Bool) async throws {
-           // First, try to fetch the current member data
-           let query = client
-               .from("Member")
-               .select()
-               .eq("id", value: userId)
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
            
-           do {
-               let response: [Member] = try await query.execute().value
+           // If member doesn't exist, create a new record
+           if response.isEmpty {
+               let newMember = Member(
+                   id: userId,
+                   email: currentUser?.email ?? "",
+                   firstName: "",
+                   lastName: "",
+                   favourites: isFavourite ? [bookId.uuidString] : []
+               )
                
-               // If member doesn't exist, create a new record
-               if response.isEmpty {
-                   let newMember = Member(
-                       id: userId,
-                       email: currentUser?.email ?? "",
-                       firstName: "",
-                       lastName: "",
-                       favourites: isFavourite ? [bookId.uuidString] : []
-                   )
-                   
-                   try await client
-                       .from("Member")
-                       .insert(newMember)
-                       .execute()
-               } else {
-                   // Member exists, update their favorites
-                   var member = response[0]
-                   let bookIdString = bookId.uuidString
-                   
-                   if isFavourite {
-                       if !member.favourites.contains(bookIdString) {
-                           member.favourites.append(bookIdString)
-                       }
-                   } else {
-                       member.favourites.removeAll { $0 == bookIdString }
+               try await client
+                   .from("Member")
+                   .insert(newMember)
+                   .execute()
+           } else {
+               // Member exists, update their favorites
+               var member = response[0]
+               let bookIdString = bookId.uuidString
+               
+               if isFavourite {
+                   if !member.favourites.contains(bookIdString) {
+                       member.favourites.append(bookIdString)
                    }
-                   
-                   try await client
-                       .from("Member")
-                       .update(["favourites": member.favourites])
-                       .eq("id", value: userId)
-                       .execute()
+               } else {
+                   member.favourites.removeAll { $0 == bookIdString }
                }
                
-               print("Favourites updated successfully for user: \(userId)")
-           } catch {
-               print("Error updating favourites: \(error)")
-               throw error
+               try await client
+                   .from("Member")
+                   .update(["favourites": member.favourites])
+                   .eq("id", value: userId)
+                   .execute()
            }
+           
+           print("Favourites updated successfully for user: \(userId)")
+       } catch {
+           print("Error updating favourites: \(error)")
+           throw error
        }
+   }
 }
 
