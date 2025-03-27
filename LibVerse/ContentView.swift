@@ -5,9 +5,9 @@ struct ContentView: View {
     var isAuthenticated: Bool = false
     
     var body: some View {
-        if isAuthenticated {
+        if isAuthenticated{
             TabBarView()
-        } else {
+        }else{
             LogInView()
         }
     }

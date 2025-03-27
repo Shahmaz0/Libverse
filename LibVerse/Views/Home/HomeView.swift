@@ -31,7 +31,7 @@ struct TabBarView: View {
                 }
                 .tag(0)
             
-            HomeView()
+            myshelf()
                 .tabItem {
                     Image(systemName: "books.vertical.fill")
                     Text("MyShelf")
