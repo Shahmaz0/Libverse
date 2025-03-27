@@ -8,7 +8,7 @@ struct ContentView: View {
         if isAuthenticated{
             TabBarView()
         }else{
-            LogInView()
+            TabBarView()
         }
     }
 }
