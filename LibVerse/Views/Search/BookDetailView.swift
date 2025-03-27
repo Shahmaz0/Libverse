@@ -12,6 +12,7 @@ struct BookDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     @State private var isFavorite: Bool = false
     @State private var isInBag: Bool = false
+    @State private var showingShelfSelector: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -266,6 +267,22 @@ struct BookDetailView: View {
                                                         bookId: book.id,
                                                         isFavourite: isFavorite
                                                     )
+                                                    
+                                                    if isFavorite {
+                                                        try await supabaseManager.addBookToShelf(
+                                                            userId: userId,
+                                                            shelfName: "Favorites",
+                                                            bookId: book.id
+                                                        )
+                                                        print("✅ Book added to Favorites shelf successfully")
+                                                    } else {
+                                                        try await supabaseManager.removeBookFromShelf(
+                                                            userId: userId,
+                                                            shelfName: "Favorites",
+                                                            bookId: book.id
+                                                        )
+                                                        print("✅ Book removed from Favorites shelf successfully")
+                                                    }
                                                 } catch {
                                                     print("Error updating favourites: \(error)")
                                                 }
@@ -318,7 +335,7 @@ struct BookDetailView: View {
                             .overlay(
                                 VStack {
                                     Button(action: {
-                                        presentationMode.wrappedValue.dismiss()
+                                        showingShelfSelector = true
                                     }) {
                                         Image(systemName: "books.vertical.fill")
                                             .resizable()
@@ -447,6 +464,153 @@ struct BookDetailView: View {
             }
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .sheet(isPresented: $showingShelfSelector) {
+            SelectShelfView(book: book)
+                .environmentObject(supabaseManager)
+        }
+    }
+}
+
+// SelectShelfView for choosing which shelf to add a book to
+struct SelectShelfView: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var supabaseManager: SupabaseManager
+    let book: Book
+    @State private var shelves: [String] = ["Favorites"]
+    @State private var isLoading: Bool = true
+    @State private var errorMessage: String? = nil
+    @State private var selectedShelf: String? = nil
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "FCEFD5")
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                Text("Add to Shelf")
+                    .font(.custom("Charter", size: 26))
+                    .bold()
+                    .foregroundColor(Color(hex: "7C4B2D"))
+                    .padding(.top, 30)
+                
+                if isLoading {
+                    ProgressView("Loading shelves...")
+                        .foregroundColor(.black)
+                } else if let error = errorMessage {
+                    Text(error)
+                        .foregroundColor(.red)
+                        .padding()
+                } else {
+                    ScrollView {
+                        VStack(spacing: 15) {
+                            ForEach(shelves, id: \.self) { shelf in
+                                Button(action: {
+                                    selectedShelf = shelf
+                                    addBookToShelf(shelf)
+                                }) {
+                                    HStack {
+                                        Text(shelf)
+                                            .font(.custom("Charter", size: 18))
+                                            .foregroundColor(.black)
+                                        
+                                        Spacer()
+                                        
+                                        Image(systemName: "chevron.right")
+                                            .foregroundColor(Color(hex: "7C4B2D"))
+                                    }
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.white.opacity(0.5))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 0)
+                                            .stroke(Color.black, lineWidth: 1)
+                                    )
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                }
+                
+                Button(action: {
+                    dismiss()
+                }) {
+                    Text("Cancel")
+                        .font(.custom("Charter", size: 18))
+                        .foregroundColor(.white)
+                        .frame(width: 200, height: 50)
+                        .background(Color(hex: "DE5B23"))
+                }
+                .padding(.bottom, 30)
+                
+                Spacer()
+            }
+            .padding()
+        }
+        .onAppear {
+            loadShelves()
+        }
+    }
+    
+    private func loadShelves() {
+        guard let currentUser = supabaseManager.currentUser else {
+            errorMessage = "Please login to add books to your shelf"
+            isLoading = false
+            return
+        }
+        
+        Task {
+            do {
+                let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
+                
+                await MainActor.run {
+                    // Get shelf names from dictionary keys and sort them
+                    var shelfNames = Array(userShelves.keys)
+                    
+                    // Ensure "Favorites" is always first
+                    if let favIndex = shelfNames.firstIndex(of: "Favorites") {
+                        shelfNames.remove(at: favIndex)
+                        shelfNames.insert("Favorites", at: 0)
+                    } else {
+                        shelfNames.insert("Favorites", at: 0)
+                    }
+                    
+                    shelves = shelfNames
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to load shelves: \(error.localizedDescription)"
+                    isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func addBookToShelf(_ shelfName: String) {
+        guard let currentUser = supabaseManager.currentUser else {
+            errorMessage = "Please login to add books to your shelf"
+            return
+        }
+        
+        Task {
+            do {
+                // Add book to selected shelf
+                try await supabaseManager.addBookToShelf(
+                    userId: currentUser.id,
+                    shelfName: shelfName,
+                    bookId: book.id
+                )
+                
+                await MainActor.run {
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to add book to shelf: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 
