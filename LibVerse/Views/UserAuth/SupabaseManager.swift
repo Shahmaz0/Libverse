@@ -17,9 +17,10 @@ struct Member: Codable {
     let lastName: String
     var favourites: [String]
     var myBag: [String]
+    var shelves: [String: [String]]? // Dictionary mapping shelf names to arrays of book IDs
     let created_at: Date?
     
-    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], created_at: Date? = nil) {
+    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], shelves: [String: [String]]? = ["Favorites": []], created_at: Date? = nil) {
         self.id = id
         self.email = email
         self.password = password
@@ -27,7 +28,108 @@ struct Member: Codable {
         self.lastName = lastName
         self.favourites = favourites
         self.myBag = mybag
+        self.shelves = shelves
         self.created_at = created_at
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, email, password, firstName, lastName, favourites, myBag, shelves, created_at
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(UUID.self, forKey: .id)
+        email = try container.decode(String.self, forKey: .email)
+        password = try container.decodeIfPresent(String.self, forKey: .password)
+        firstName = try container.decode(String.self, forKey: .firstName)
+        lastName = try container.decode(String.self, forKey: .lastName)
+        favourites = try container.decode([String].self, forKey: .favourites)
+        myBag = try container.decode([String].self, forKey: .myBag)
+        created_at = try container.decodeIfPresent(Date.self, forKey: .created_at)
+        
+        // Special handling for shelves as JSONB
+        if let shelvesObj = try? container.decodeIfPresent([String: [String]].self, forKey: .shelves) {
+            shelves = shelvesObj
+            print("📖 Decoded shelves directly: \(String(describing: shelves))")
+        } else if let shelvesData = try? container.decodeIfPresent(Data.self, forKey: .shelves) {
+            let decoder = JSONDecoder()
+            shelves = try? decoder.decode([String: [String]].self, from: shelvesData)
+            print("📖 Decoded shelves from Data: \(String(describing: shelves))")
+        } else if let anyValue = try? container.decodeIfPresent(AnyDecodable.self, forKey: .shelves) {
+            // Try to convert Any value to expected dictionary
+            print("📖 Decoding shelves from AnyDecodable: \(anyValue.value)")
+            if let dict = anyValue.value as? [String: [String]] {
+                shelves = dict
+                print("📖 Converted directly to [String: [String]]")
+            } else if let dict = anyValue.value as? [String: [Any]] {
+                // Convert [Any] arrays to [String] arrays
+                var convertedDict: [String: [String]] = [:]
+                for (key, values) in dict {
+                    print("📖 Converting values for key: \(key)")
+                    convertedDict[key] = values.compactMap { value in
+                        if let stringValue = value as? String {
+                            return stringValue
+                        }
+                        print("⚠️ Non-string value found: \(value)")
+                        return nil
+                    }
+                }
+                shelves = convertedDict
+                print("📖 Converted from [String: [Any]] to [String: [String]]: \(convertedDict)")
+            } else {
+                shelves = ["Favorites": []]
+                print("📖 Could not convert, using default")
+            }
+        } else {
+            shelves = ["Favorites": []]
+            print("📖 No shelves field found, using default")
+        }
+    }
+    
+    // Custom encoding to ensure shelves is properly serialized
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encode(email, forKey: .email)
+        try container.encodeIfPresent(password, forKey: .password)
+        try container.encode(firstName, forKey: .firstName)
+        try container.encode(lastName, forKey: .lastName)
+        try container.encode(favourites, forKey: .favourites)
+        try container.encode(myBag, forKey: .myBag)
+        try container.encodeIfPresent(created_at, forKey: .created_at)
+        
+        // Ensure shelves is encoded as a proper JSON object
+        if let shelves = shelves {
+            try container.encode(shelves, forKey: .shelves)
+            print("📝 Encoded shelves as: \(shelves)")
+        }
+    }
+}
+
+struct AnyDecodable: Decodable {
+    var value: Any
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if container.decodeNil() {
+            self.value = NSNull()
+        } else if let bool = try? container.decode(Bool.self) {
+            self.value = bool
+        } else if let int = try? container.decode(Int.self) {
+            self.value = int
+        } else if let double = try? container.decode(Double.self) {
+            self.value = double
+        } else if let string = try? container.decode(String.self) {
+            self.value = string
+        } else if let array = try? container.decode([AnyDecodable].self) {
+            self.value = array.map { $0.value }
+        } else if let dictionary = try? container.decode([String: AnyDecodable].self) {
+            self.value = dictionary.mapValues { $0.value }
+        } else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "AnyDecodable cannot decode value")
+        }
     }
 }
 
@@ -147,18 +249,21 @@ class SupabaseManager: ObservableObject {
             email: email,
             firstName: firstName,
             lastName: lastName,
-            favourites: []
+            favourites: [],
+            mybag: [],
+            shelves: ["Favorites": []]  // Initialize with default Favorites shelf
         )
         
         do {
+            print("📝 Saving member data to database: \(member)")
             _ = try await SupabaseManager.shared.client
                 .from("Member")
                 .insert(member)
                 .execute()
             
-            print("Member data saved successfully with ID: \(userId)")
+            print("✅ Member data saved successfully with ID: \(userId)")
         } catch {
-            print("Error saving member data: \(error)")
+            print("❌ Error saving member data: \(error)")
             throw error
         }
     }
@@ -333,6 +438,253 @@ class SupabaseManager: ObservableObject {
            print("Favourites updated successfully for user: \(userId)")
        } catch {
            print("Error updating favourites: \(error)")
+           throw error
+       }
+   }
+   
+   // Shelf Management Functions
+   func fetchUserShelves(userId: UUID) async throws -> [String: [String]] {
+       print("🔍 Fetching shelves for user: \(userId)")
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
+           
+           if response.isEmpty {
+               print("⚠️ No member record found for user: \(userId)")
+               return ["Favorites": []]
+           } else {
+               print("✅ Found member record for user: \(userId)")
+               if let shelves = response[0].shelves {
+                   print("📚 Retrieved shelves: \(shelves)")
+                   return shelves
+               } else {
+                   print("⚠️ No shelves found for user: \(userId), returning default")
+                   return ["Favorites": []]
+               }
+           }
+       } catch {
+           print("❌ Error fetching user shelves: \(error)")
+           throw error
+       }
+   }
+   
+   func createShelf(userId: UUID, shelfName: String) async throws {
+       print("🆕 Creating shelf: \(shelfName) for user: \(userId)")
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
+           
+           if response.isEmpty {
+               print("⚠️ No member found, creating a new member with shelf: \(shelfName)")
+               // Create new member with the shelf
+               var initialShelves: [String: [String]] = ["Favorites": []]
+               initialShelves[shelfName] = []
+               
+               let newMember = Member(
+                   id: userId,
+                   email: currentUser?.email ?? "",
+                   firstName: "",
+                   lastName: "",
+                   favourites: [],
+                   mybag: [],
+                   shelves: initialShelves
+               )
+               
+               let insertResult = try await client
+                   .from("Member")
+                   .insert(newMember)
+                   .execute()
+               
+               print("✅ Created new member with shelf: \(insertResult)")
+           } else {
+               // Update existing member with new shelf
+               var member = response[0]
+               print("📊 Current member data: \(member)")
+               
+               var shelves = member.shelves ?? ["Favorites": []]
+               print("📚 Current shelves: \(shelves)")
+               
+               // Only add if the shelf doesn't already exist
+               if shelves[shelfName] == nil {
+                   shelves[shelfName] = []
+                   print("📝 Adding new shelf: \(shelfName)")
+                   
+                   // Make a proper Encodable update
+                   member.shelves = shelves
+                   
+                   let updateResult = try await client
+                       .from("Member")
+                       .update(["shelves": shelves])
+                       .eq("id", value: userId)
+                       .execute()
+                   
+                   print("✅ Updated member with new shelf: \(updateResult)")
+               } else {
+                   print("⚠️ Shelf already exists: \(shelfName)")
+               }
+           }
+           
+           print("✅ Shelf created successfully for user: \(userId)")
+       } catch {
+           print("❌ Error creating shelf: \(error)")
+           throw error
+       }
+   }
+   
+   func deleteShelf(userId: UUID, shelfName: String) async throws {
+       // Don't allow deletion of Favorites shelf
+       if shelfName == "Favorites" {
+           throw NSError(domain: "ShelfManagement", code: -1, userInfo: [NSLocalizedDescriptionKey: "Cannot delete Favorites shelf"])
+       }
+       
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
+           
+           if !response.isEmpty {
+               var member = response[0]
+               var shelves = member.shelves ?? ["Favorites": []]
+               
+               // Remove the shelf
+               shelves.removeValue(forKey: shelfName)
+               
+               // Update member with modified shelves
+               member.shelves = shelves
+               
+               let updateResult = try await client
+                   .from("Member")
+                   .update(["shelves": shelves])
+                   .eq("id", value: userId)
+                   .execute()
+               
+               print("✅ Shelf deleted successfully for user: \(userId)")
+           }
+       } catch {
+           print("❌ Error deleting shelf: \(error)")
+           throw error
+       }
+   }
+   
+   func addBookToShelf(userId: UUID, shelfName: String, bookId: UUID) async throws {
+       print("📚 Adding book: \(bookId) to shelf: \(shelfName) for user: \(userId)")
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
+           print("🔍 Found \(response.count) member records")
+           
+           if response.isEmpty {
+               print("⚠️ No member found, creating a new member with book in shelf")
+               // Create new member with the shelf and book
+               var initialShelves: [String: [String]] = ["Favorites": []]
+               initialShelves[shelfName] = [bookId.uuidString]
+               
+               let newMember = Member(
+                   id: userId,
+                   email: currentUser?.email ?? "",
+                   firstName: "",
+                   lastName: "",
+                   favourites: [],
+                   mybag: [],
+                   shelves: initialShelves
+               )
+               
+               let insertResult = try await client
+                   .from("Member")
+                   .insert(newMember)
+                   .execute()
+               
+               print("✅ Created new member with book in shelf: \(insertResult)")
+           } else {
+               // Update existing member
+               var member = response[0]
+               print("📊 Current member data: \(String(describing: member.id))")
+               
+               var shelves = member.shelves ?? ["Favorites": []]
+               print("📚 Current shelves: \(shelves)")
+               
+               // Create shelf if it doesn't exist
+               if shelves[shelfName] == nil {
+                   print("🆕 Creating new shelf: \(shelfName)")
+                   shelves[shelfName] = []
+               }
+               
+               // Add book if not already in shelf
+               let bookIdString = bookId.uuidString
+               if !shelves[shelfName]!.contains(bookIdString) {
+                   print("📝 Adding book ID: \(bookIdString) to shelf: \(shelfName)")
+                   shelves[shelfName]!.append(bookIdString)
+                   
+                   // Make a proper Encodable update
+                   member.shelves = shelves
+                   
+                   let updateResult = try await client
+                       .from("Member")
+                       .update(["shelves": shelves])
+                       .eq("id", value: userId)
+                       .execute()
+                   
+                   print("✅ Updated member with book in shelf: \(updateResult)")
+               } else {
+                   print("⚠️ Book already exists in shelf: \(shelfName)")
+               }
+           }
+           
+           print("✅ Book added to shelf successfully for user: \(userId)")
+       } catch {
+           print("❌ Error adding book to shelf: \(error)")
+           throw error
+       }
+   }
+   
+   func removeBookFromShelf(userId: UUID, shelfName: String, bookId: UUID) async throws {
+       let query = client
+           .from("Member")
+           .select()
+           .eq("id", value: userId)
+       
+       do {
+           let response: [Member] = try await query.execute().value
+           
+           if !response.isEmpty {
+               var member = response[0]
+               var shelves = member.shelves ?? ["Favorites": []]
+               
+               // Remove book from shelf if it exists
+               if var shelfBooks = shelves[shelfName] {
+                   let bookIdString = bookId.uuidString
+                   shelfBooks.removeAll { $0 == bookIdString }
+                   shelves[shelfName] = shelfBooks
+                   
+                   // Update member with modified shelves
+                   member.shelves = shelves
+                   
+                   let updateResult = try await client
+                       .from("Member")
+                       .update(["shelves": shelves])
+                       .eq("id", value: userId)
+                       .execute()
+                   
+                   print("Book removed from shelf successfully for user: \(userId)")
+               }
+           }
+       } catch {
+           print("Error removing book from shelf: \(error)")
            throw error
        }
    }

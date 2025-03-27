@@ -5,8 +5,11 @@ struct ContentView: View {
     var isAuthenticated: Bool = false
     
     var body: some View {
-        TabBarView()
-       // myshelf()
+        if isAuthenticated{
+            TabBarView()
+        }else{
+            LogInView()
+        }
     }
 }
     
