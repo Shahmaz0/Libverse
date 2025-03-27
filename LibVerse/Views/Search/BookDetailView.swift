@@ -16,6 +16,7 @@ struct BookDetailView: View {
     @State private var currentIssueId: UUID?
     @State private var checkIssueTimer: Timer?
     @State private var refreshTrigger: Bool = false
+    @State private var isInBag: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -217,9 +218,22 @@ struct BookDetailView: View {
                             .overlay(
                                 VStack {
                                     Button(action: {
-                                        presentationMode.wrappedValue.dismiss()
+                                        isInBag.toggle()
+                                        Task {
+                                            if let userId = supabaseManager.currentUser?.id {
+                                                do {
+                                                    try await supabaseManager.updateMyBag(
+                                                        userId: userId,
+                                                        bookId: book.id,
+                                                        addToBag: isInBag
+                                                    )
+                                                } catch {
+                                                    print("Error updating myBag: \(error)")
+                                                }
+                                            }
+                                        }
                                     }) {
-                                        Image(systemName: "bag")
+                                        Image(systemName: isInBag ? "bag.fill" : "bag")
                                             .resizable()
                                             .frame(width: 20, height: 20)
                                             .foregroundColor(.black)
@@ -433,7 +447,7 @@ struct BookDetailView: View {
             .navigationBarBackButtonHidden(true)
             .edgesIgnoringSafeArea(.bottom)
             .onAppear {
-                // Check if the book is already in favourites
+                // Check if the book is already in favourites and bag
                 if let userId = supabaseManager.currentUser?.id {
                     Task {
                         do {
@@ -446,6 +460,7 @@ struct BookDetailView: View {
                             let response: [Member] = try await query.execute().value
                             if let member = response.first {
                                 isFavorite = member.favourites.contains(book.id.uuidString)
+                                isInBag = member.myBag.contains(book.id.uuidString)
                             }
                             
                             // Check if book is issued to current user
