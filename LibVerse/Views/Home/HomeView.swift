@@ -38,12 +38,19 @@ struct TabBarView: View {
                 }
                 .tag(1)
             
+            MyBag()
+                .tabItem {
+                    Image(systemName: "bag")
+                    Text("MyBag")
+                }
+                .tag(2)
+            
             UserProfileView(showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
                 .tabItem {
                     Image(systemName: "person.fill")
                     Text("Profile")
                 }
-                .tag(2)
+                .tag(3)
             
 //            MyShelfView()
 //                .tabItem {
