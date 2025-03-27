@@ -5,6 +5,7 @@ struct BookCard: View {
     let title: String
     let author: String
     let description: String
+    var showPlusButton: Bool = false // New parameter with default value false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -46,7 +47,7 @@ struct BookCard: View {
                     }
                 }
                 .frame(width: 44, height: 59)
-                .padding(.leading, 50)
+                .padding(.leading, 10)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
@@ -72,9 +73,11 @@ struct BookCard: View {
                 .padding(.vertical, 8)
                 
                 Spacer()
-                Image(systemName: "chevron.right")
+                Image(systemName: showPlusButton ? "plus.circle" : "chevron.right")
                     .foregroundColor(.black)
-                    .padding(.trailing, 45)
+                    .font(.system(size: showPlusButton ? 24 : 16))
+                    //.padding(.trailing, 100)
+                    .padding(.leading, -35)
             }
             .frame(height: 90)
         }
