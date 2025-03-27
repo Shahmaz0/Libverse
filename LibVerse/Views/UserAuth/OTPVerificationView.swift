@@ -109,6 +109,16 @@ struct OTPVerificationView: View {
                 }
             }
             .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(.black)
+                    }
+                }
+            }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .alert("Verification", isPresented: $showAlert) {
                 Button("OK") {
@@ -221,3 +231,4 @@ struct OTPVerificationView: View {
         }
     }
 }
+

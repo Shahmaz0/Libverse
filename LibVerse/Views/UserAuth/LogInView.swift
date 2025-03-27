@@ -11,6 +11,8 @@ struct LogInView: View {
     @State private var showOTPView = false
     @State private var isLoading = false
     @State private var isPasswordVisible = false
+    @State private var hasLoginError = false
+    @State private var errorMessage: String = ""
     
     var body: some View {
         NavigationStack {
@@ -30,7 +32,7 @@ struct LogInView: View {
                                 .bold()
                                 .multilineTextAlignment(.center)
                             
-                            Text("Access your university’s digital library and discover a vast collection of academic books, journals and novels.")
+                            Text("Access your university's digital library and discover a vast collection of academic books, journals and novels.")
                                 .font(.custom("Courier", size: 16))
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
@@ -38,6 +40,14 @@ struct LogInView: View {
                         
                         // Form Fields
                         Group {
+                            if hasLoginError {
+                                Text(errorMessage)
+                                    .font(.custom("Courier", size: 14))
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.bottom, 5)
+                            }
+                            
                             customTextField(placeholder: "College Email", text: $collegeEmail, keyboardType: .emailAddress, autocapitalization: .none)
                             passwordField(placeholder: "Password", text: $password, isPasswordVisible: $isPasswordVisible)
                         }
@@ -68,7 +78,7 @@ struct LogInView: View {
                                     .padding()
                                     .background(Color(red: 255/255, green: 111/255, blue: 45/255))
                                     .foregroundColor(.white)
-                                    .cornerRadius(10)
+                                    .cornerRadius(0)
                             }
                         }
                         .disabled(isLoading)
@@ -112,10 +122,12 @@ struct LogInView: View {
                 .frame(height: 43)
                 .keyboardType(keyboardType)
                 .autocapitalization(autocapitalization)
+                .autocorrectionDisabled()
                 .overlay(
                     RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.black, lineWidth: 1.25)
+                        .stroke(hasLoginError ? Color.red : Color.black, lineWidth: 1.25)
                 )
+                .shadow(color: hasLoginError ? Color.red.opacity(0.5) : Color.clear, radius: 5, x: 0, y: 0)
         }
     }
     
@@ -127,16 +139,18 @@ struct LogInView: View {
                     .frame(height: 43)
                     .overlay(
                         RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.black, lineWidth: 1.25)
+                            .stroke(hasLoginError ? Color.red : Color.black, lineWidth: 1.25)
                     )
+                    .shadow(color: hasLoginError ? Color.red.opacity(0.5) : Color.clear, radius: 5, x: 0, y: 0)
             } else {
                 SecureField(placeholder, text: text)
                     .padding()
                     .frame(height: 43)
                     .overlay(
                         RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.black, lineWidth: 1.25)
+                            .stroke(hasLoginError ? Color.red : Color.black, lineWidth: 1.25)
                     )
+                    .shadow(color: hasLoginError ? Color.red.opacity(0.5) : Color.clear, radius: 5, x: 0, y: 0)
             }
             Button(action: { isPasswordVisible.wrappedValue.toggle() }) {
                 Image(systemName: isPasswordVisible.wrappedValue ? "eye" : "eye.slash")
@@ -149,12 +163,14 @@ struct LogInView: View {
     private func logIn() {
         let collegeDomain = "@gmail.com"
         guard collegeEmail.hasSuffix(collegeDomain) else {
-            alertMessage = "Please use your college email address (\(collegeDomain))."
-            showAlert = true
+            errorMessage = "Please use your college email address (\(collegeDomain))."
+            hasLoginError = true
             return
         }
         
         isLoading = true
+        hasLoginError = false
+        errorMessage = ""
         
         Task {
             do {
@@ -162,12 +178,19 @@ struct LogInView: View {
                 guard !password.isEmpty, password.count >= 6 else {
                     DispatchQueue.main.async {
                         isLoading = false
-                        alertMessage = "Password must be at least 6 characters."
-                        showAlert = true
+                        errorMessage = "Password must be at least 6 characters."
+                        hasLoginError = true
                     }
                     return
                 }
                 
+                // First try to sign in with email and password
+                let authResponse = try await SupabaseManager.shared.client.auth.signIn(
+                    email: collegeEmail,
+                    password: password
+                )
+                
+                // If credentials are correct, proceed with OTP flow
                 try await SupabaseManager.shared.client.auth.signInWithOTP(email: collegeEmail)
                 
                 UserDefaults.standard.set(collegeEmail, forKey: "pendingLoginEmail")
@@ -180,8 +203,12 @@ struct LogInView: View {
             } catch {
                 DispatchQueue.main.async {
                     isLoading = false
-                    alertMessage = "Error sending verification code: \(error.localizedDescription)"
-                    showAlert = true
+                    hasLoginError = true
+                    if error.localizedDescription.contains("Invalid login credentials") {
+                        errorMessage = "Invalid email or password. Please try again."
+                    } else {
+                        errorMessage = "Error: \(error.localizedDescription)"
+                    }
                 }
             }
         }

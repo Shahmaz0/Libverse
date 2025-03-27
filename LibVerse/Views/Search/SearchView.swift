@@ -20,14 +20,68 @@ struct SearchView: View {
         ("Law", "book.fill"),
     ]
     
+    private func normalizeText(_ text: String) -> String {
+        return text
+            .lowercased()
+            .trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: "[,'\";:.!?]", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+    }
+    
+    private func bookMatchesSearch(_ book: Book, searchTerms: [String]) -> Bool {
+        guard !searchTerms.isEmpty else { return true }
+        
+        let normalizedTitle = normalizeText(book.title)
+        let normalizedAuthors = book.author.map { normalizeText($0) }
+        let normalizedDescription = book.Description.map { normalizeText($0) } ?? ""
+        
+        for term in searchTerms {
+            let normalizedTerm = normalizeText(term)
+            guard !normalizedTerm.isEmpty else { continue }
+            
+            // Check title
+            if normalizedTitle.contains(normalizedTerm) {
+                return true
+            }
+            
+            // Check authors
+            if normalizedAuthors.contains(where: { $0.contains(normalizedTerm) }) {
+                return true
+            }
+            
+            // Check description
+            if normalizedDescription.contains(normalizedTerm) {
+                return true
+            }
+            
+            // Check if search term matches beginning of any word
+            let titleWords = normalizedTitle.components(separatedBy: " ")
+            if titleWords.contains(where: { $0.hasPrefix(normalizedTerm) }) {
+                return true
+            }
+            
+            // Check author words
+            for author in normalizedAuthors {
+                let authorWords = author.components(separatedBy: " ")
+                if authorWords.contains(where: { $0.hasPrefix(normalizedTerm) }) {
+                    return true
+                }
+            }
+        }
+        
+        return false
+    }
+    
     var filteredBooks: [Book] {
-        if searchText.isEmpty {
+        if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
             return dataController.books
         } else {
+            let searchTerms = normalizeText(searchText)
+                .components(separatedBy: " ")
+                .filter { !$0.isEmpty }
+            
             return dataController.books.filter { book in
-                let titleMatch = book.title.localizedCaseInsensitiveContains(searchText)
-                let authorMatch = book.author.contains { $0.localizedCaseInsensitiveContains(searchText) }
-                return titleMatch || authorMatch
+                bookMatchesSearch(book, searchTerms: searchTerms)
             }
         }
     }
