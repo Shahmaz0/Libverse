@@ -61,7 +61,14 @@ struct MyBag: View {
                                 .padding(.bottom, -1),
                             alignment: .bottom
                         )
-                    
+                        .overlay(
+                            Image(systemName: "square.and.pencil")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(.trailing, 15)
+                                .foregroundColor(.black),
+                            alignment: .center
+                        )
                 }
                 .overlay(
                     Text("My Bag")
@@ -84,7 +91,7 @@ struct MyBag: View {
                         .padding(.top, 300)
                 } else {
                     ScrollView {
-                        VStack(spacing: 0) {
+                        VStack(spacing: 1) {
                             ForEach(viewModel.bagBooks, id: \.id) { book in
                                 BookCard(
                                     BookImage: book.imageLink ?? "",
@@ -96,8 +103,20 @@ struct MyBag: View {
                         }
                     }
                 }
-                
                 Spacer()
+                
+                Button(action: {
+                    print("Issue All clicked.")
+                }) {
+                    Text("Issue all")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                        .foregroundColor(.white)
+                        .cornerRadius(0)
+                }
+                .frame(width: 345, height: 30, alignment: .center)
+                .padding(.bottom, 20)
             }
         }
         .onAppear {

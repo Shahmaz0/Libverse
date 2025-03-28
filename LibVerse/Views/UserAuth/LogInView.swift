@@ -68,7 +68,8 @@ struct LogInView: View {
                                     .padding()
                                     .background(Color(red: 255/255, green: 111/255, blue: 45/255))
                                     .foregroundColor(.white)
-                                    .cornerRadius(10)
+                                    .border(.black)
+                                    .cornerRadius(0)
                             }
                         }
                         .disabled(isLoading)
