@@ -10,6 +10,8 @@ import SwiftUI
 struct MyBag: View {
     @StateObject private var viewModel = MyBagViewModel()
     @EnvironmentObject var supabaseManager: SupabaseManager
+    @State private var isEditing = false
+    @State private var selectedBooks: Set<UUID> = []
     
     var body: some View {
         ZStack {
@@ -17,7 +19,7 @@ struct MyBag: View {
                 .ignoresSafeArea()
             
             VStack {
-                // Header
+
                 HStack(spacing: 0) {
                     Rectangle()
                         .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -62,11 +64,34 @@ struct MyBag: View {
                             alignment: .bottom
                         )
                         .overlay(
-                            Image(systemName: "square.and.pencil")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .padding(.trailing, 15)
-                                .foregroundColor(.black),
+                            Group {
+                                if isEditing {
+                                    Button(action: {
+                                        withAnimation {
+                                            isEditing = false
+                                            selectedBooks.removeAll()
+                                        }
+                                    }) {
+                                        Image(systemName: "xmark")
+                                            .resizable()
+                                            .frame(width: 15, height: 15)
+                                            .padding(.trailing, 15)
+                                            .foregroundColor(.black)
+                                    }
+                                } else {
+                                    Button(action: {
+                                        withAnimation {
+                                            isEditing = true
+                                        }
+                                    }) {
+                                        Image(systemName: "square.and.pencil")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .padding(.trailing, 15)
+                                            .foregroundColor(.black)
+                                    }
+                                }
+                            },
                             alignment: .center
                         )
                 }
@@ -80,7 +105,7 @@ struct MyBag: View {
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, -20)
                 
-                // Content
+                // Content section of the MyBag view (only showing the modified part)
                 if viewModel.isLoading {
                     ProgressView()
                         .padding(.top, 50)
@@ -93,30 +118,87 @@ struct MyBag: View {
                     ScrollView {
                         VStack(spacing: 1) {
                             ForEach(viewModel.bagBooks, id: \.id) { book in
-                                BookCard(
-                                    BookImage: book.imageLink ?? "",
-                                    title: book.title,
-                                    author: book.author.joined(separator: ", "),
-                                    description: book.Description ?? "No description available"
-                                )
+                                ZStack(alignment: .leading) {
+                                    BookCard(
+                                        BookImage: book.imageLink ?? "",
+                                        title: book.title,
+                                        author: book.author.joined(separator: ", "),
+                                        description: book.Description ?? "No description available"
+                                    )
+                                    .frame(maxWidth: isEditing ? 300 : .infinity)
+                                    .padding(.leading, isEditing ? 45 : 0)
+                                    
+                                    if isEditing {
+                                        Button(action: {
+                                            withAnimation {
+                                                if selectedBooks.contains(book.id) {
+                                                    selectedBooks.remove(book.id)
+                                                } else {
+                                                    selectedBooks.insert(book.id)
+                                                }
+                                            }
+                                        }) {
+                                            Image(systemName: selectedBooks.contains(book.id) ? "checkmark.circle.fill" : "circle")
+                                                .resizable()
+                                                .frame(width: 24, height: 24)
+                                                .foregroundColor(selectedBooks.contains(book.id) ?
+                                                    Color(red: 255/255, green: 111/255, blue: 45/255) : .gray)
+                                        }
+                                        .offset(x: -30)
+                                        .padding(.leading, 15)
+                                    }
+                                }
+                                .transition(.opacity)
                             }
                         }
+                        .padding(.horizontal, isEditing ? 0 : 20)
                     }
                 }
                 Spacer()
                 
-                Button(action: {
-                    print("Issue All clicked.")
-                }) {
-                    Text("Issue all")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                        .foregroundColor(.white)
-                        .cornerRadius(0)
+                if isEditing {
+                    HStack {
+                        Button(action: {
+                            // Delete selected books action
+                            print("Delete selected books: \(selectedBooks)")
+                        }) {
+                            Text("Delete")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.red)
+                                .foregroundColor(.white)
+                                .cornerRadius(0)
+                        }
+                        .frame(width: 160, height: 30, alignment: .center)
+                        
+                        Button(action: {
+                            // Issue selected books action
+                            print("Issue selected books: \(selectedBooks)")
+                        }) {
+                            Text("Issue Selected")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                                .foregroundColor(.white)
+                                .cornerRadius(0)
+                        }
+                        .frame(width: 160, height: 30, alignment: .center)
+                    }
+                    .padding(.bottom, 20)
+                } else {
+                    Button(action: {
+                        print("Issue All clicked.")
+                    }) {
+                        Text("Issue all")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .foregroundColor(.white)
+                            .cornerRadius(0)
+                    }
+                    .frame(width: 345, height: 30, alignment: .center)
+                    .padding(.bottom, 20)
                 }
-                .frame(width: 345, height: 30, alignment: .center)
-                .padding(.bottom, 20)
             }
         }
         .onAppear {
