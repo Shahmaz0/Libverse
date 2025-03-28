@@ -842,6 +842,9 @@ struct AddBooksToShelf: View {
     let selectedCategory: String
     var onBookSelected: (Book) -> Void
     
+    // Add state to track which books are in the shelf
+    @State private var addedBooks: Set<UUID> = []
+    
     var filteredBooks: [Book] {
         if searchText.isEmpty {
             return dataController.books
@@ -884,18 +887,22 @@ struct AddBooksToShelf: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(filteredBooks, id: \.id) { book in
-                            Button(action: {
-                                onBookSelected(book)
-                                dismiss()
-                            }) {
-                                BookCard(
-                                    BookImage: book.imageLink ?? "mvc",
-                                    title: book.title,
-                                    author: book.author.joined(separator: ", "),
-                                    description: book.Description ?? "No description available",
-                                    showPlusButton: true
-                                )
-                            }
+                            BookCard(
+                                BookImage: book.imageLink ?? "mvc",
+                                title: book.title,
+                                author: book.author.joined(separator: ", "),
+                                description: book.Description ?? "No description available",
+                                showPlusButton: true,
+                                onPlusButtonTapped: {
+                                    if addedBooks.contains(book.id) {
+                                        addedBooks.remove(book.id)
+                                    } else {
+                                        addedBooks.insert(book.id)
+                                        onBookSelected(book)
+                                        dismiss()
+                                    }
+                                }, isAdded: addedBooks.contains(book.id)
+                            )
                             .padding(.vertical, 1)
                         }
                     }
@@ -908,6 +915,10 @@ struct AddBooksToShelf: View {
         }
         .onAppear {
             dataController.fetchBooks()
+            // Initialize addedBooks with books that are already in the shelf
+            if let currentShelfBooks = shelfBooks[selectedCategory] {
+                addedBooks = Set(currentShelfBooks.map { $0.id })
+            }
         }
     }
 }

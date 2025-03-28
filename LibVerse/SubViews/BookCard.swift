@@ -6,6 +6,8 @@ struct BookCard: View {
     let author: String
     let description: String
     var showPlusButton: Bool = false // New parameter with default value false
+    var onPlusButtonTapped: (() -> Void)? = nil // New parameter for handling plus button tap
+    var isAdded: Bool = false // Changed to regular Bool with default value
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -73,11 +75,21 @@ struct BookCard: View {
                 .padding(.vertical, 8)
                 
                 Spacer()
-                Image(systemName: showPlusButton ? "plus.circle" : "chevron.right")
-                    .foregroundColor(.black)
-                    .font(.system(size: showPlusButton ? 24 : 16))
-                    //.padding(.trailing, 100)
+                if showPlusButton {
+                    Button(action: {
+                        onPlusButtonTapped?()
+                    }) {
+                        Image(systemName: isAdded ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundColor(isAdded ? .green : .black)
+                            .font(.system(size: 24))
+                    }
                     .padding(.leading, -35)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.black)
+                        .font(.system(size: 16))
+                        .padding(.leading, -35)
+                }
             }
             .frame(height: 90)
         }
@@ -96,7 +108,8 @@ struct BookCard_Previews: PreviewProvider {
             BookImage: "",
             title: "Great Gatsby",
             author: "F. Scott Fitzgerald",
-            description: "Nick Carraway, a young man from Minnesota."
+            description: "Nick Carraway, a young man from Minnesota.",
+            isAdded: false
         )
         .padding()
     }
