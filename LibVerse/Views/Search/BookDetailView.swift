@@ -11,8 +11,13 @@ struct BookDetailView: View {
     let book: Book
     @Environment(\.presentationMode) var presentationMode
     @State private var isFavorite: Bool = false
+    @State private var showingQRCode = false
+    @State private var isBookIssued: Bool = false
+    @State private var currentIssueId: UUID?
+    @State private var checkIssueTimer: Timer?
+    @State private var refreshTrigger: Bool = false
     @State private var isInBag: Bool = false
-    @State private var showingShelfSelector: Bool = false
+    @State private var showingReturnQRCode = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -151,15 +156,35 @@ struct BookDetailView: View {
                     
                     
                     Button(action: {
-                        print("Button Pressed")
+                        if isBookIssued {
+                            showingReturnQRCode = true
+                        } else if let userId = supabaseManager.currentUser?.id {
+                            showingQRCode = true
+                        }
                     }) {
-                        Text("Issue Now")
+                        Text(isBookIssued ? "Return" : "Issue Now")
                             .frame(width: 325, height: 20)
                             .padding()
-                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .background(isBookIssued ? Color.green : Color(red: 255/255, green: 111/255, blue: 45/255))
                             .foregroundColor(.white)
                             .cornerRadius(0)
                             .border(.black)
+                    }
+                    .sheet(isPresented: $showingQRCode) {
+                        if let userId = supabaseManager.currentUser?.id {
+                            QRCodeGeneratorView(book: book, memberId: userId.uuidString)
+                                .onAppear {
+                                    startCheckingIssueStatus()
+                                }
+                                .onDisappear {
+                                    stopCheckingIssueStatus()
+                                }
+                        }
+                    }
+                    .sheet(isPresented: $showingReturnQRCode) {
+                        if let issueId = currentIssueId {
+                            ReturnQRCodeView(issueId: issueId)
+                        }
                     }
                     
                     HStack(spacing: 0) {
@@ -267,22 +292,6 @@ struct BookDetailView: View {
                                                         bookId: book.id,
                                                         isFavourite: isFavorite
                                                     )
-                                                    
-                                                    if isFavorite {
-                                                        try await supabaseManager.addBookToShelf(
-                                                            userId: userId,
-                                                            shelfName: "Favorites",
-                                                            bookId: book.id
-                                                        )
-                                                        print("✅ Book added to Favorites shelf successfully")
-                                                    } else {
-                                                        try await supabaseManager.removeBookFromShelf(
-                                                            userId: userId,
-                                                            shelfName: "Favorites",
-                                                            bookId: book.id
-                                                        )
-                                                        print("✅ Book removed from Favorites shelf successfully")
-                                                    }
                                                 } catch {
                                                     print("Error updating favourites: \(error)")
                                                 }
@@ -335,7 +344,7 @@ struct BookDetailView: View {
                             .overlay(
                                 VStack {
                                     Button(action: {
-                                        showingShelfSelector = true
+                                        presentationMode.wrappedValue.dismiss()
                                     }) {
                                         Image(systemName: "books.vertical.fill")
                                             .resizable()
@@ -446,6 +455,7 @@ struct BookDetailView: View {
                 if let userId = supabaseManager.currentUser?.id {
                     Task {
                         do {
+                            // Check favourites
                             let query = supabaseManager.client
                                 .from("Member")
                                 .select()
@@ -456,160 +466,69 @@ struct BookDetailView: View {
                                 isFavorite = member.favourites.contains(book.id.uuidString)
                                 isInBag = member.myBag.contains(book.id.uuidString)
                             }
+                            
+                            // Check if book is issued to current user
+                            let issueQuery = supabaseManager.client
+                                .from("BookIssue")
+                                .select()
+                                .eq("memberId", value: userId)
+                                .eq("bookId", value: book.id)
+                                .eq("status", value: "Issued")
+                            
+                            let issueResponse: [BookIssue] = try await issueQuery.execute().value
+                            if let issue = issueResponse.first {
+                                isBookIssued = true
+                                currentIssueId = issue.id
+                            }
                         } catch {
-                            print("Error fetching member data: \(error)")
+                            print("Error fetching data: \(error)")
                         }
                     }
                 }
             }
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .sheet(isPresented: $showingShelfSelector) {
-            SelectShelfView(book: book)
-                .environmentObject(supabaseManager)
+        .id(refreshTrigger)
+    }
+    
+    private func startCheckingIssueStatus() {
+        // Check every 2 seconds for issue status
+        checkIssueTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            Task {
+                await checkIssueStatus()
+            }
         }
     }
-}
-
-// SelectShelfView for choosing which shelf to add a book to
-struct SelectShelfView: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var supabaseManager: SupabaseManager
-    let book: Book
-    @State private var shelves: [String] = ["Favorites"]
-    @State private var isLoading: Bool = true
-    @State private var errorMessage: String? = nil
-    @State private var selectedShelf: String? = nil
     
-    var body: some View {
-        ZStack {
-            Color(hex: "FCEFD5")
-                .ignoresSafeArea()
+    private func stopCheckingIssueStatus() {
+        checkIssueTimer?.invalidate()
+        checkIssueTimer = nil
+    }
+    
+    private func checkIssueStatus() async {
+        guard let userId = supabaseManager.currentUser?.id else { return }
+        
+        do {
+            let issueQuery = supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .eq("bookId", value: book.id)
+                .eq("status", value: "Issued")
             
-            VStack(spacing: 20) {
-                Text("Add to Shelf")
-                    .font(.custom("Charter", size: 26))
-                    .bold()
-                    .foregroundColor(Color(hex: "7C4B2D"))
-                    .padding(.top, 30)
-                
-                if isLoading {
-                    ProgressView("Loading shelves...")
-                        .foregroundColor(.black)
-                } else if let error = errorMessage {
-                    Text(error)
-                        .foregroundColor(.red)
-                        .padding()
-                } else {
-                    ScrollView {
-                        VStack(spacing: 15) {
-                            ForEach(shelves, id: \.self) { shelf in
-                                Button(action: {
-                                    selectedShelf = shelf
-                                    addBookToShelf(shelf)
-                                }) {
-                                    HStack {
-                                        Text(shelf)
-                                            .font(.custom("Charter", size: 18))
-                                            .foregroundColor(.black)
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: "chevron.right")
-                                            .foregroundColor(Color(hex: "7C4B2D"))
-                                    }
-                                    .padding()
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.white.opacity(0.5))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 0)
-                                            .stroke(Color.black, lineWidth: 1)
-                                    )
-                                }
-                            }
-                        }
-                        .padding(.horizontal)
-                    }
+            let issueResponse: [BookIssue] = try await issueQuery.execute().value
+            if let issue = issueResponse.first {
+                // Book has been issued, update UI and close QR view
+                await MainActor.run {
+                    isBookIssued = true
+                    currentIssueId = issue.id
+                    showingQRCode = false
+                    refreshTrigger.toggle()
                 }
-                
-                Button(action: {
-                    dismiss()
-                }) {
-                    Text("Cancel")
-                        .font(.custom("Charter", size: 18))
-                        .foregroundColor(.white)
-                        .frame(width: 200, height: 50)
-                        .background(Color(hex: "DE5B23"))
-                }
-                .padding(.bottom, 30)
-                
-                Spacer()
+                stopCheckingIssueStatus()
             }
-            .padding()
-        }
-        .onAppear {
-            loadShelves()
-        }
-    }
-    
-    private func loadShelves() {
-        guard let currentUser = supabaseManager.currentUser else {
-            errorMessage = "Please login to add books to your shelf"
-            isLoading = false
-            return
-        }
-        
-        Task {
-            do {
-                let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
-                
-                await MainActor.run {
-                    // Get shelf names from dictionary keys and sort them
-                    var shelfNames = Array(userShelves.keys)
-                    
-                    // Ensure "Favorites" is always first
-                    if let favIndex = shelfNames.firstIndex(of: "Favorites") {
-                        shelfNames.remove(at: favIndex)
-                        shelfNames.insert("Favorites", at: 0)
-                    } else {
-                        shelfNames.insert("Favorites", at: 0)
-                    }
-                    
-                    shelves = shelfNames
-                    isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to load shelves: \(error.localizedDescription)"
-                    isLoading = false
-                }
-            }
-        }
-    }
-    
-    private func addBookToShelf(_ shelfName: String) {
-        guard let currentUser = supabaseManager.currentUser else {
-            errorMessage = "Please login to add books to your shelf"
-            return
-        }
-        
-        Task {
-            do {
-                // Add book to selected shelf
-                try await supabaseManager.addBookToShelf(
-                    userId: currentUser.id,
-                    shelfName: shelfName,
-                    bookId: book.id
-                )
-                
-                await MainActor.run {
-                    dismiss()
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to add book to shelf: \(error.localizedDescription)"
-                }
-            }
+        } catch {
+            print("Error checking issue status: \(error)")
         }
     }
 }
