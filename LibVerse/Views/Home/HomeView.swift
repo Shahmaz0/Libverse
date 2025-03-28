@@ -214,23 +214,17 @@ struct HomeView: View {
                     }
                     
                     // Genre Books Display
-                    if let selectedGenre = selectedGenre {
-                        if isLoadingGenre {
-                            ProgressView()
-                                .scaleEffect(1.2)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                        } else if let error = genreError {
-                            Text(error)
-                                .foregroundColor(.red)
-                                .padding()
-                        } else if genreBooks.isEmpty {
-                            Text("No books available in \(selectedGenre) genre")
-                                .foregroundColor(.gray)
-                                .padding()
-                        } else {
-                            genreBooksScroll()
-                        }
+                    if isLoadingGenre {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else if let error = genreError {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .padding()
+                    } else if !genreBooks.isEmpty {
+                        genreBooksScroll()
                     }
                 }
                 .padding(.vertical)
@@ -385,6 +379,7 @@ struct HomeView: View {
     private func fetchBooksByGenre(_ genre: String) {
         isLoadingGenre = true
         genreError = nil
+        genreBooks = [] // Clear previous books
         
         Task {
             do {
@@ -393,7 +388,7 @@ struct HomeView: View {
                     .from("Books")
                     .select("*")
                     .eq("genre", value: genre)
-                    .order("dateAdded", ascending: false)  // Sort by newest first
+                    .order("dateAdded", ascending: false)
                     .limit(10)
                     .execute()
                     .value
@@ -403,12 +398,18 @@ struct HomeView: View {
                 DispatchQueue.main.async {
                     self.genreBooks = response
                     self.isLoadingGenre = false
+                    
+                    // If no books found, deselect the genre
+                    if response.isEmpty {
+                        self.selectedGenre = nil
+                    }
                 }
             } catch {
                 print("Error fetching books for genre \(genre): \(error)")
                 DispatchQueue.main.async {
                     self.genreError = "Failed to load books: \(error.localizedDescription)"
                     self.isLoadingGenre = false
+                    self.selectedGenre = nil // Reset selection on error
                 }
             }
         }
