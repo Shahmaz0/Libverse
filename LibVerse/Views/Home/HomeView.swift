@@ -133,8 +133,18 @@ struct TabBarView: View {
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
     @State private var recentBooks: [LibraryBook] = []
+    @State private var recommendedBooks: [LibraryBook] = []
+    @State private var genreBooks: [LibraryBook] = []
     @State private var isLoadingRecent = true
+    @State private var isLoadingRecommended = true
+    @State private var isLoadingGenre = true
     @State private var recentError: String?
+    @State private var recommendedError: String?
+    @State private var genreError: String?
+    @State private var selectedGenre: String?
+    
+    // Updated genres based on the database
+    let genres = ["Technology", "Business", "Reference", "Medicine", "Mathematics", "Science"]
     
     let popularBooks: [PopularBook] = [
         PopularBook(imageName: "mvc", title: "MVC", author: "R.S. Salaria", rating: 4, isBookmarked: true),
@@ -146,7 +156,7 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    sectionHeader(title: "Recent Books")
+                    sectionHeader(title: "Latest Arrivals")
                     
                     if isLoadingRecent {
                         ProgressView()
@@ -158,15 +168,70 @@ struct HomeView: View {
                             .foregroundColor(.red)
                             .padding()
                     } else if recentBooks.isEmpty {
-                        Text("No recent books available")
+                        Text("No new arrivals available")
                             .foregroundColor(.gray)
                             .padding()
                     } else {
                         recentBooksScroll()
                     }
                     
+                    sectionHeader(title: "For You")
+                    
+                    if isLoadingRecommended {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else if let error = recommendedError {
+                        Text(error)
+                            .foregroundColor(.red)
+                            .padding()
+                    } else if recommendedBooks.isEmpty {
+                        Text("No personalized recommendations available")
+                            .foregroundColor(.gray)
+                            .padding()
+                    } else {
+                        recommendedBooksScroll()
+                    }
+                    
                     sectionHeader(title: "Browse By Genre")
-                    horizontalBookScroll()
+                    
+                    // Genre Selection ScrollView
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(genres, id: \.self) { genre in
+                                GenreButton(
+                                    genre: genre,
+                                    isSelected: selectedGenre == genre,
+                                    action: {
+                                        selectedGenre = genre
+                                        fetchBooksByGenre(genre)
+                                    }
+                                )
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // Genre Books Display
+                    if let selectedGenre = selectedGenre {
+                        if isLoadingGenre {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                        } else if let error = genreError {
+                            Text(error)
+                                .foregroundColor(.red)
+                                .padding()
+                        } else if genreBooks.isEmpty {
+                            Text("No books available in \(selectedGenre) genre")
+                                .foregroundColor(.gray)
+                                .padding()
+                        } else {
+                            genreBooksScroll()
+                        }
+                    }
                 }
                 .padding(.vertical)
             }
@@ -195,6 +260,7 @@ struct HomeView: View {
             }
             .onAppear {
                 fetchRecentBooks()
+                fetchRecommendedBooks()
             }
         }
     }
@@ -216,7 +282,7 @@ struct HomeView: View {
     // Helper for recent books scroll
     func recentBooksScroll() -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: -35) {
+            HStack(alignment: .top, spacing: -35) {
                 ForEach(recentBooks) { book in
                     RecentBookCard(book: book)
                 }
@@ -225,12 +291,24 @@ struct HomeView: View {
         }
     }
     
-    // Helper for horizontal scroll of popular books
-    func horizontalBookScroll() -> some View {
+    // Helper for recommended books scroll
+    func recommendedBooksScroll() -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: -35) {
-                ForEach(popularBooks) { book in
-                    PopularCard(book: book)
+            HStack(alignment: .top, spacing: -35) {
+                ForEach(recommendedBooks) { book in
+                    RecentBookCard(book: book)
+                }
+            }
+            .padding(.leading, 11)
+        }
+    }
+    
+    // Helper for genre books scroll
+    func genreBooksScroll() -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: -35) {
+                ForEach(genreBooks) { book in
+                    RecentBookCard(book: book)
                 }
             }
             .padding(.leading, 11)
@@ -244,12 +322,12 @@ struct HomeView: View {
         
         Task {
             do {
-                print("Fetching books from Supabase...")
+                print("Fetching recent books from Supabase...")
                 let response: [LibraryBook] = try await SupabaseManager.shared.client
                     .from("Books")
                     .select("*")
                     .order("dateAdded", ascending: false)
-                    .limit(10)  // Limit to 10 books for better performance
+                    .limit(10)
                     .execute()
                     .value
                 
@@ -260,10 +338,77 @@ struct HomeView: View {
                     self.isLoadingRecent = false
                 }
             } catch {
-                print("Error fetching books: \(error)")
+                print("Error fetching recent books: \(error)")
                 DispatchQueue.main.async {
                     self.recentError = "Failed to load recent books: \(error.localizedDescription)"
                     self.isLoadingRecent = false
+                }
+            }
+        }
+    }
+    
+    // Function to fetch recommended books based on user preferences
+    private func fetchRecommendedBooks() {
+        isLoadingRecommended = true
+        recommendedError = nil
+        
+        Task {
+            do {
+                print("Fetching recommended books from Supabase...")
+                // For now, we'll fetch books based on genre preferences
+                // In the future, this could be enhanced with more sophisticated recommendation logic
+                let response: [LibraryBook] = try await SupabaseManager.shared.client
+                    .from("Books")
+                    .select("*")
+                    .order("dateAdded", ascending: false)
+                    .limit(10)
+                    .execute()
+                    .value
+                
+                print("Received recommended books from Supabase: \(response)")
+                
+                DispatchQueue.main.async {
+                    self.recommendedBooks = response
+                    self.isLoadingRecommended = false
+                }
+            } catch {
+                print("Error fetching recommended books: \(error)")
+                DispatchQueue.main.async {
+                    self.recommendedError = "Failed to load recommended books: \(error.localizedDescription)"
+                    self.isLoadingRecommended = false
+                }
+            }
+        }
+    }
+    
+    // Function to fetch books by genre
+    private func fetchBooksByGenre(_ genre: String) {
+        isLoadingGenre = true
+        genreError = nil
+        
+        Task {
+            do {
+                print("Fetching books for genre: \(genre)")
+                let response: [LibraryBook] = try await SupabaseManager.shared.client
+                    .from("Books")
+                    .select("*")
+                    .eq("genre", value: genre)
+                    .order("dateAdded", ascending: false)  // Sort by newest first
+                    .limit(10)
+                    .execute()
+                    .value
+                
+                print("Received books for genre \(genre): \(response)")
+                
+                DispatchQueue.main.async {
+                    self.genreBooks = response
+                    self.isLoadingGenre = false
+                }
+            } catch {
+                print("Error fetching books for genre \(genre): \(error)")
+                DispatchQueue.main.async {
+                    self.genreError = "Failed to load books: \(error.localizedDescription)"
+                    self.isLoadingGenre = false
                 }
             }
         }
@@ -303,18 +448,22 @@ struct RecentBookCard: View {
                         .background(Color.white)
                 }
             }
-            .padding(.bottom, 2)
             
-            // Book Title
-            Text(book.title)
-                .font(.custom("Charter", size: 14))
-                .lineLimit(2)
-                .frame(width: 160, alignment: .leading)
-            // Author
-            Text(book.author)
-                .font(.custom("Charter", size: 13))
-                .foregroundColor(.gray)
-                .lineLimit(1)
+            // Text Container
+            VStack(alignment: .leading, spacing: 2) {
+                Text(book.title)
+                    .font(.custom("Charter", size: 14))
+                    .lineLimit(2)
+                    .frame(width: 160, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+                
+                Text(book.author)
+                    .font(.custom("Charter", size: 13))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .frame(width: 160, alignment: .leading)
+            }
+            .frame(width: 160)
         }
         .frame(width: 180)
     }
@@ -339,20 +488,47 @@ struct PopularCard: View {
                     .clipped()
                     .background(Color.white)
             }
-            .padding(.bottom, 2)
             
-            // Book Title
-            Text(book.title)
-                .font(.custom("Charter", size: 14))
-                .lineLimit(2)
-                .frame(width: 160, alignment: .leading)
-            // Author
-            Text(book.author)
-                .font(.custom("Charter", size: 13))
-                .foregroundColor(.gray)
-                .lineLimit(1)
+            // Text Container
+            VStack(alignment: .leading, spacing: 2) {
+                Text(book.title)
+                    .font(.custom("Charter", size: 14))
+                    .lineLimit(2)
+                    .frame(width: 160, alignment: .leading)
+                    .multilineTextAlignment(.leading)
+                
+                Text(book.author)
+                    .font(.custom("Charter", size: 13))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                    .frame(width: 160, alignment: .leading)
+            }
+            .frame(width: 160)
         }
         .frame(width: 180)
+    }
+}
+
+// MARK: - Genre Button
+struct GenreButton: View {
+    let genre: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(genre)
+                .font(.system(size: 14, weight: .medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(isSelected ? Color.orange : Color.white)
+                .foregroundColor(isSelected ? .white : .black)
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(isSelected ? Color.orange : Color.gray.opacity(0.3), lineWidth: 1)
+                )
+        }
     }
 }
 
