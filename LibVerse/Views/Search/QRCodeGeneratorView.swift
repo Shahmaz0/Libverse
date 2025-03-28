@@ -38,19 +38,27 @@ struct QRCodeGeneratorView: View {
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             
+            Spacer()
+            
             Text("Show this QR to Librarian")
                 .font(.custom("Charter", size: 24))
                 .foregroundColor(.black)
-                .padding(.top)
             
             if let qrImage = qrImage {
                 ZStack {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.black, lineWidth: 2)
+                        .frame(width: 290, height: 290)
+                    
+                    RoundedRectangle(cornerRadius: 15)
+                        .stroke(Color.black.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
+                        .frame(width: 280, height: 280)
+                    
                     Image(uiImage: qrImage)
                         .interpolation(.none)
                         .resizable()
                         .scaledToFit()
                         .frame(width: 250, height: 250)
-                        .padding()
                         .opacity(isExpired ? 0.3 : 1.0)
                     
                     if isExpired {
@@ -72,6 +80,23 @@ struct QRCodeGeneratorView: View {
             .padding()
             .background(Color.gray.opacity(0.1))
             .cornerRadius(10)
+            
+            Spacer()
+            
+            VStack(spacing: 12) {
+                Text(book.title)
+                    .font(.custom("Charter", size: 18))
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.black)
+                
+                Text("By: \(book.author.joined(separator: ", "))")
+                    .font(.custom("Charter", size: 16))
+                    .foregroundColor(.gray)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.horizontal)
+            .padding(.bottom, 30)
         }
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -120,11 +145,48 @@ struct QRCodeGeneratorView: View {
         let data = Data(qrData.utf8)
         
         filter.setValue(data, forKey: "inputMessage")
-        filter.setValue("M", forKey: "inputCorrectionLevel")
+        filter.setValue("H", forKey: "inputCorrectionLevel") // Using high error correction for logo overlay
         
         if let outputImage = filter.outputImage {
-            if let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
-                return UIImage(cgImage: cgImage)
+            // Scale up the QR code to desired size
+            let transform = CGAffineTransform(scaleX: 10, y: 10)
+            let scaledQRImage = outputImage.transformed(by: transform)
+            
+            if let qrCGImage = context.createCGImage(scaledQRImage, from: scaledQRImage.extent) {
+                let size = CGSize(width: qrCGImage.width, height: qrCGImage.height)
+                UIGraphicsBeginImageContextWithOptions(size, false, 0)
+                
+                let qrUIImage = UIImage(cgImage: qrCGImage)
+                qrUIImage.draw(in: CGRect(origin: .zero, size: size))
+                
+                // Add logo in center
+                if let logoImage = UIImage(named: "QRlogo") {
+                    let logoSize = CGSize(width: size.width * 0.25, height: size.height * 0.25)
+                    let logoX = (size.width - logoSize.width) / 2
+                    let logoY = (size.height - logoSize.height) / 2
+                    let logoRect = CGRect(x: logoX, y: logoY, width: logoSize.width, height: logoSize.height)
+                    
+                    // Create circular mask for logo
+                    UIGraphicsBeginImageContextWithOptions(logoSize, false, 0)
+                    let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: logoSize))
+                    circlePath.addClip()
+                    
+                    // Draw logo with white background
+                    UIColor.white.setFill()
+                    UIBezierPath(rect: CGRect(origin: .zero, size: logoSize)).fill()
+                    logoImage.draw(in: CGRect(origin: .zero, size: logoSize))
+                    
+                    let circularLogo = UIGraphicsGetImageFromCurrentImageContext()
+                    UIGraphicsEndImageContext()
+                    
+                    // Draw circular logo on QR code
+                    circularLogo?.draw(in: logoRect)
+                }
+                
+                let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+                UIGraphicsEndImageContext()
+                
+                return finalImage ?? UIImage(systemName: "xmark.circle") ?? UIImage()
             }
         }
         
