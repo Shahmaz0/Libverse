@@ -79,9 +79,9 @@ struct BookCard: View {
                     //.padding(.trailing, 100)
                     .padding(.leading, -35)
             }
-            .frame(height: 90)
+            .frame(maxWidth: .infinity, maxHeight: 90)
         }
-        .frame(width: 393, height: 90, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: 90)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .cornerRadius(0)
         .shadow(color: .black.opacity(0.5), radius: 0, x: 0, y: 1)
