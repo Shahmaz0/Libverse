@@ -9,6 +9,203 @@ import Foundation
 import SwiftUI
 // The BookDetailView should be available as part of the module, no need for a specific import
 
+// Splash Screen Animation
+struct SplashScreen: View {
+    @State private var bookRotation: Double = 0
+    @State private var bookScale: CGFloat = 1.0
+    @State private var bookOpacity: Double = 0.7
+    @State private var textOpacity: Double = 0
+    @State private var shimmerOffset: CGFloat = -0.25
+    @State private var pageFlipAngle: Double = 0
+    @State private var currentPage: Int = 0
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "FCEFD5")
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                ZStack {
+                    // Book shadow
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(Color.black.opacity(0.3))
+                        .frame(width: 120, height: 160)
+                        .offset(x: 5, y: 5)
+                    
+                    // Book cover and pages
+                    ZStack {
+                        // Book base
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color(hex: "DE5B23"))
+                            .frame(width: 120, height: 160)
+                        
+                        // Book spine detail
+                        Rectangle()
+                            .fill(Color(hex: "C89A69"))
+                            .frame(width: 20, height: 160)
+                            .offset(x: -50, y: 0)
+                        
+                        // Book pages
+                        ForEach(0..<5) { index in
+                            Rectangle()
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 100, height: 150)
+                                .offset(x: 8)
+                                .rotationEffect(.degrees(index == currentPage ? pageFlipAngle : 0), anchor: .leading)
+                                .opacity(index > currentPage ? 0 : 1)
+                        }
+                        
+                        // Book title lines
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(0..<3) { _ in
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.7))
+                                    .frame(width: 70, height: 8)
+                            }
+                        }
+                        .offset(x: 10)
+                        .opacity(pageFlipAngle > 45 ? 0 : 1)
+                        
+                        // Shimmer effect
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color.white.opacity(0.0),
+                                        Color.white.opacity(0.5),
+                                        Color.white.opacity(0.0)
+                                    ]),
+                                    startPoint: UnitPoint(x: shimmerOffset, y: 0.5),
+                                    endPoint: UnitPoint(x: shimmerOffset + 1, y: 0.5)
+                                )
+                            )
+                            .frame(width: 120, height: 160)
+                            .blendMode(.screen)
+                    }
+                    .rotationEffect(.degrees(bookRotation))
+                    .scaleEffect(bookScale)
+                    .opacity(bookOpacity)
+                }
+                
+                Text("Pustakalaya")
+                    .font(.custom("Charter", size: 32))
+                    .foregroundColor(Color(hex: "7C4B2D"))
+                    .opacity(textOpacity)
+                
+                Text("Loading your shelves...")
+                    .font(.custom("Charter", size: 16))
+                    .foregroundColor(Color(hex: "7C4B2D"))
+                    .opacity(textOpacity)
+            }
+        }
+        .onAppear {
+            // Rotating animation
+            withAnimation(Animation.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                bookRotation = 10
+                bookScale = 1.1
+                bookOpacity = 1.0
+            }
+            
+            // Text fade in
+            withAnimation(Animation.easeIn(duration: 0.7).delay(0.3)) {
+                textOpacity = 1.0
+            }
+            
+            // Shimmer animation
+            withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                shimmerOffset = 1.25
+            }
+            
+            // Page flip animation
+            flipPages()
+        }
+    }
+    
+    private func flipPages() {
+        // Initial delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            flipPage()
+        }
+    }
+    
+    private func flipPage() {
+        withAnimation(Animation.easeInOut(duration: 0.6)) {
+            pageFlipAngle = 180
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            // Reset angle without animation and set up next page
+            pageFlipAngle = 0
+            currentPage = (currentPage + 1) % 5
+            
+            // Recursively call flipPage for continuous animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                flipPage()
+            }
+        }
+    }
+}
+
+// Shimmer Book Cover View
+struct ShimmerBookCover: View {
+    @State private var shimmerOffset: CGFloat = -0.25
+    var opacity: Double = 1.0
+    
+    var body: some View {
+        ZStack {
+            // Book base shape
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color.gray.opacity(0.3 * opacity))
+                .frame(width: 93, height: 120)
+            
+            // Book spine
+            HStack(spacing: 0) {
+                // Spine
+                Rectangle()
+                    .fill(Color.gray.opacity(0.5 * opacity))
+                    .frame(width: 10, height: 120)
+                
+                Spacer()
+            }
+            .frame(width: 93)
+            
+            // Title lines
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(0..<3) { _ in
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.gray.opacity(0.4 * opacity))
+                        .frame(width: 60, height: 6)
+                }
+                
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.gray.opacity(0.4 * opacity))
+                    .frame(width: 40, height: 6)
+            }
+            .padding(.leading, 20)
+            
+            // Shimmer effect
+            RoundedRectangle(cornerRadius: 4)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.gray.opacity(0.2 * opacity),
+                            Color.white.opacity(0.5 * opacity),
+                            Color.gray.opacity(0.2 * opacity)
+                        ]),
+                        startPoint: UnitPoint(x: shimmerOffset, y: 0.5),
+                        endPoint: UnitPoint(x: shimmerOffset + 1, y: 0.5)
+                    )
+                )
+                .frame(width: 93, height: 120)
+        }
+        .onAppear {
+            withAnimation(Animation.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                shimmerOffset = 1.25
+            }
+        }
+    }
+}
+
 // Modal View
 struct AddModalView: View {
     @Environment(\.dismiss) var dismiss
@@ -89,6 +286,7 @@ struct myshelf: View {
     @State private var searchText: String = ""
     @State private var isSearching: Bool = false
     @State private var isLoading: Bool = false
+    @State private var isInitialLoading: Bool = true  // Track if this is the initial tab load
     @State private var errorMessage: String? = nil
     @EnvironmentObject var supabaseManager: SupabaseManager
     
@@ -113,9 +311,9 @@ struct myshelf: View {
                 Color(hex: "FCEFD5")
                     .ignoresSafeArea()
                 
-                if isLoading {
-                    ProgressView("Loading shelves...")
-                        .foregroundColor(.black)
+                if isLoading && isInitialLoading {
+                    SplashScreen()
+                        .transition(.opacity)
                 } else {
                     VStack(spacing: 0) {
                         // Header
@@ -305,13 +503,19 @@ struct myshelf: View {
                                                                                 .clipped()
                                                                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
                                                                         case .failure:
-                                                                            Image("mvc")
-                                                                                .resizable()
-                                                                                .scaledToFill()
-                                                                                .frame(width: 93, height: 120)
-                                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                                            ZStack {
+                                                                                ShimmerBookCover(opacity: 0.8)
+                                                                                
+                                                                                // Add a small error indicator
+                                                                                Image(systemName: "exclamationmark.triangle.fill")
+                                                                                    .font(.system(size: 20))
+                                                                                    .foregroundColor(Color(hex: "DE5B23").opacity(0.8))
+                                                                                    .offset(y: -40)
+                                                                            }
+                                                                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
                                                                         case .empty:
-                                                                            ProgressView()
+                                                                            ShimmerBookCover(opacity: 0.8)
+                                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
                                                                         @unknown default:
                                                                             EmptyView()
                                                                         }
@@ -332,10 +536,6 @@ struct myshelf: View {
                                                                 .fill(Color.clear)
                                                                 .frame(width: 93, height: 120)
                                                                 .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                            
-                                                            Text("\(bookIndex + 1)")
-                                                                .font(.system(size: 24, weight: .bold))
-                                                                .foregroundColor(Color.clear)
                                                         }
                                                     }
                                                 }
@@ -354,6 +554,7 @@ struct myshelf: View {
                     }
                 }
             }
+            .animation(.easeInOut(duration: 0.5), value: isLoading)
             .sheet(isPresented: $showingAddModal) {
                 AddModalView { newShelfName in
                     createNewShelf(newShelfName)
@@ -397,37 +598,27 @@ struct myshelf: View {
     
     private func loadUserShelves() {
         guard let currentUser = supabaseManager.currentUser else {
-            print("⚠️ Cannot load shelves: No user logged in")
             return
         }
         
-        print("🔄 Loading shelves for user: \(currentUser.id)")
         isLoading = true
         
         Task {
             do {
-                // Fetch the user's shelves from the database
                 let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
-                print("📚 Fetched shelves: \(userShelves)")
                 
-                // Convert shelf data to the format our view uses
                 var loadedCategories = ["Favorites"]
                 var loadedShelfBooks: [String: [Book]] = [:]
                 
                 for (shelfName, bookIds) in userShelves {
-                    print("🔍 Processing shelf: \(shelfName) with \(bookIds.count) books")
-                    
                     if !loadedCategories.contains(shelfName) {
                         loadedCategories.append(shelfName)
                     }
                     
-                    // Fetch books for each shelf
                     if !bookIds.isEmpty {
                         let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
-                        print("📘 Found \(uuidValues.count) valid book UUIDs")
                         
                         if !uuidValues.isEmpty {
-                            print("🔍 Fetching books with IDs: \(uuidValues)")
                             let books: [Book] = try await supabaseManager.client
                                 .from("Books")
                                 .select()
@@ -435,35 +626,30 @@ struct myshelf: View {
                                 .execute()
                                 .value
                             
-                            print("📙 Fetched \(books.count) books for shelf: \(shelfName)")
                             loadedShelfBooks[shelfName] = books
                         } else {
-                            print("⚠️ No valid book UUIDs for shelf: \(shelfName)")
                             loadedShelfBooks[shelfName] = []
                         }
                     } else {
-                        print("📋 No books in shelf: \(shelfName)")
                         loadedShelfBooks[shelfName] = []
                     }
                 }
                 
-                // Update the UI
                 await MainActor.run {
-                    print("🔄 Updating UI with \(loadedCategories.count) shelves")
                     categories = loadedCategories
                     shelfBooks = loadedShelfBooks
                     isLoading = false
+                    isInitialLoading = false // Set to false after first successful load
                     
-                    // If the selected category doesn't exist anymore, switch to Favorites
                     if !loadedCategories.contains(selectedCategory) {
                         selectedCategory = "Favorites"
                     }
                 }
             } catch {
-                print("❌ Error loading shelves: \(error.localizedDescription)")
                 await MainActor.run {
                     errorMessage = "Failed to load shelves: \(error.localizedDescription)"
                     isLoading = false
+                    isInitialLoading = false // Still set to false even if there's an error
                 }
             }
         }
@@ -471,40 +657,24 @@ struct myshelf: View {
     
     private func createNewShelf(_ shelfName: String) {
         guard let currentUser = supabaseManager.currentUser else {
-            print("⚠️ Cannot create shelf: No user logged in")
             return
         }
         
-        print("📚 Creating new shelf: \(shelfName) for user: \(currentUser.id)")
-        
         Task {
             do {
-                // Explicitly log the user ID and shelf name being sent
-                print("📝 Sending request to create shelf: \(shelfName) for user: \(currentUser.id)")
-                
                 try await supabaseManager.createShelf(userId: currentUser.id, shelfName: shelfName)
                 
                 await MainActor.run {
-                    print("✅ Shelf created successfully in database: \(shelfName)")
                     categories.append(shelfName)
                     shelfBooks[shelfName] = []
                     selectedCategory = shelfName
                     
-                    // Refresh shelves from database to ensure consistency
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        loadUserShelves()
+                        refreshShelves()
                     }
                 }
             } catch {
-                print("❌ Error creating shelf: \(error.localizedDescription)")
-                
-                // For debugging - try to fetch current shelves to see state
-                do {
-                    let currentShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
-                    print("📊 Current shelves in database: \(currentShelves)")
-                } catch {
-                    print("❌ Failed to fetch current shelves: \(error.localizedDescription)")
-                }
+                // Error handling without debug prints
             }
         }
     }
@@ -527,23 +697,18 @@ struct myshelf: View {
                     }
                 }
             } catch {
-                print("Error deleting shelf: \(error.localizedDescription)")
+                // Error handling without debug prints
             }
         }
     }
     
     private func addBookToCurrentShelf(_ book: Book) {
         guard let currentUser = supabaseManager.currentUser else {
-            print("⚠️ Cannot add book to shelf: No user logged in")
             return
         }
         
-        print("📚 Adding book: \(book.title) (ID: \(book.id)) to shelf: \(selectedCategory)")
-        
         Task {
             do {
-                print("📝 Sending request to add book to shelf: \(selectedCategory)")
-                
                 try await supabaseManager.addBookToShelf(
                     userId: currentUser.id,
                     shelfName: selectedCategory,
@@ -551,27 +716,16 @@ struct myshelf: View {
                 )
                 
                 await MainActor.run {
-                    print("✅ Book added successfully to shelf in database")
                     var currentBooks = shelfBooks[selectedCategory] ?? []
                     currentBooks.append(book)
                     shelfBooks[selectedCategory] = currentBooks
                     
-                    // Refresh shelves from database to ensure consistency
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        loadUserShelves()
+                        refreshShelves()
                     }
                 }
             } catch {
-                print("❌ Error adding book to shelf: \(error.localizedDescription)")
-                print("📊 Debug info - Book ID: \(book.id), Shelf: \(selectedCategory), User: \(currentUser.id)")
-                
-                // For debugging - try to fetch current shelves to see state
-                do {
-                    let currentShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
-                    print("📊 Current shelves in database: \(currentShelves)")
-                } catch {
-                    print("❌ Failed to fetch current shelves: \(error.localizedDescription)")
-                }
+                // Error handling without debug prints
             }
         }
     }
@@ -597,13 +751,12 @@ struct myshelf: View {
                     currentBooks.remove(at: index)
                     shelfBooks[selectedCategory] = currentBooks
                     
-                    // Refresh shelves from database to ensure consistency
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        loadUserShelves()
+                        refreshShelves()
                     }
                 }
             } catch {
-                print("❌ Error removing book from shelf: \(error.localizedDescription)")
+                // Error handling without debug prints
             }
         }
     }
@@ -623,6 +776,61 @@ struct myshelf: View {
     
     private func shouldShowPlusButton(at index: Int) -> Bool {
         return index == selectedBooks.count
+    }
+    
+    private func refreshShelves() {
+        guard let currentUser = supabaseManager.currentUser else {
+            return
+        }
+        
+        // Don't set isLoading to true to avoid showing loading indicators
+        
+        Task {
+            do {
+                let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
+                
+                var loadedCategories = ["Favorites"]
+                var loadedShelfBooks: [String: [Book]] = [:]
+                
+                for (shelfName, bookIds) in userShelves {
+                    if !loadedCategories.contains(shelfName) {
+                        loadedCategories.append(shelfName)
+                    }
+                    
+                    if !bookIds.isEmpty {
+                        let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
+                        
+                        if !uuidValues.isEmpty {
+                            let books: [Book] = try await supabaseManager.client
+                                .from("Books")
+                                .select()
+                                .in("id", values: uuidValues)
+                                .execute()
+                                .value
+                            
+                            loadedShelfBooks[shelfName] = books
+                        } else {
+                            loadedShelfBooks[shelfName] = []
+                        }
+                    } else {
+                        loadedShelfBooks[shelfName] = []
+                    }
+                }
+                
+                await MainActor.run {
+                    categories = loadedCategories
+                    shelfBooks = loadedShelfBooks
+                    
+                    if !loadedCategories.contains(selectedCategory) {
+                        selectedCategory = "Favorites"
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to refresh shelves: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 
