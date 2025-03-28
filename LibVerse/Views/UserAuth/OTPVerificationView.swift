@@ -13,6 +13,9 @@ struct OTPVerificationView: View {
     @State private var isLoading = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var timeRemaining = 60
+    @State private var timer: Timer?
+    @State private var isResendEnabled = false
     @Environment(\.dismiss) private var dismiss
         
     var otp: String {
@@ -89,10 +92,17 @@ struct OTPVerificationView: View {
                         .padding(.horizontal)
                         
                         Button(action: resendCode) {
-                            Text("Resend Code")
-                                .font(.custom("Courier", size: 16))
-                                .foregroundColor(.black)
+                            if timeRemaining > 0 {
+                                Text("Resend Code in \(timeRemaining)s")
+                                    .font(.custom("Courier", size: 16))
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Resend Code")
+                                    .font(.custom("Courier", size: 16))
+                                    .foregroundColor(.black)
+                            }
                         }
+                        .disabled(timeRemaining > 0 || isLoading)
                     }
                     .padding()
                 }
@@ -135,6 +145,11 @@ struct OTPVerificationView: View {
             }
             .onAppear {
                 fieldFocus = 0
+                startTimer()
+            }
+            .onDisappear {
+                timer?.invalidate()
+                timer = nil
             }
         }
     }
@@ -207,10 +222,25 @@ struct OTPVerificationView: View {
         }
     }
     
-
+    private func startTimer() {
+        timeRemaining = 60
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            DispatchQueue.main.async {
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    timer?.invalidate()
+                    timer = nil
+                    isResendEnabled = true
+                }
+            }
+        }
+    }
     
     private func resendCode() {
         isLoading = true
+        isResendEnabled = false
         
         Task {
             do {
@@ -220,10 +250,12 @@ struct OTPVerificationView: View {
                     isLoading = false
                     alertMessage = "New verification code has been sent to your email"
                     showAlert = true
+                    startTimer()
                 }
             } catch {
                 DispatchQueue.main.async {
                     isLoading = false
+                    isResendEnabled = true
                     alertMessage = "Error sending new code: \(error.localizedDescription)"
                     showAlert = true
                 }
