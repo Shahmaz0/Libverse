@@ -43,12 +43,12 @@ struct TabBarView: View {
                 }
                 .tag(3)
             
-            UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
-                .tabItem {
-                    Image(systemName: "person.crop.circle")
-                    Text("Profile")
-                }
-                .tag(4)
+//            UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
+//                .tabItem {
+//                    Image(systemName: "person.crop.circle")
+//                    Text("Profile")
+//                }
+//                .tag(4)
         }
         .tint(Color(red:255/255, green: 111/255, blue: 45/255))
         .onAppear {
@@ -89,18 +89,17 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    Button {
-                        // Announcement action
-                    } label: {
+                    NavigationLink(destination: AnnouncementView()) {
                         Image(systemName: "megaphone.fill")
                             .symbolRenderingMode(.hierarchical)
                             .font(.system(size: 20))
                             .accessibilityLabel("Announcement")
                     }
                     
-                    Button {
-                        // Profile action
-                    } label: {
+                    NavigationLink(destination: 
+                        UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
+                            .navigationBarBackButtonHidden(true)
+                    ) {
                         Image(systemName: "person.crop.circle")
                             .symbolRenderingMode(.hierarchical)
                             .font(.system(size: 22))
