@@ -131,3 +131,4 @@ struct QRCodeGeneratorView: View {
         return UIImage(systemName: "xmark.circle") ?? UIImage()
     }
 } 
+
