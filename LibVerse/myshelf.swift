@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftUI
+import CommonCrypto
 // The BookDetailView should be available as part of the module, no need for a specific import
 
 // Splash Screen Animation
@@ -456,97 +457,75 @@ struct myshelf: View {
                             
                             // Scrollable content
                             ScrollView {
-                                LazyVStack(spacing: 0) {
-                                    ForEach(0..<20) { index in
-                                        // Image section
-                                        ZStack {
-                                            Image("selfbackgroun")
-                                                .resizable()
-                                                .scaledToFill()
-                                                .frame(width: UIScreen.main.bounds.width - 24, height: 143)
-                                                .clipped()
-                                            
-                                            HStack(spacing: 14) {
-                                                ForEach(0..<3) { rectangleIndex in
-                                                    let bookIndex = (index * 3) + rectangleIndex
-                                                    if shouldShowPlusButton(at: bookIndex) {
-                                                        Button(action: {
-                                                            showingTodoModal = true
-                                                        }) {
+                                RefreshableScrollView(action: {
+                                    await refreshShelves()
+                                }) {
+                                    LazyVStack(spacing: 0) {
+                                        ForEach(0..<20) { index in
+                                            // Image section
+                                            ZStack {
+                                                Image("selfbackgroun")
+                                                    .resizable()
+                                                    .scaledToFill()
+                                                    .frame(width: UIScreen.main.bounds.width - 24, height: 143)
+                                                    .clipped()
+                                                
+                                                HStack(spacing: 14) {
+                                                    ForEach(0..<3) { rectangleIndex in
+                                                        let bookIndex = (index * 3) + rectangleIndex
+                                                        if shouldShowPlusButton(at: bookIndex) {
+                                                            Button(action: {
+                                                                showingTodoModal = true
+                                                            }) {
+                                                                ZStack {
+                                                                    Rectangle()
+                                                                        .fill(Color.white)
+                                                                        .frame(width: 93, height: 120)
+                                                                        .shadow(color: .black.opacity(0.8), radius:15, x: 0, y: 13)
+                                                                    
+                                                                    Image(systemName: "plus")
+                                                                        .font(.system(size: 30))
+                                                                        .foregroundColor(Color(hex: "875232"))
+                                                                }
+                                                            }
+                                                        } else if bookIndex < selectedBooks.count {
                                                             ZStack {
                                                                 Rectangle()
-                                                                    .fill(Color.white)
+                                                                    .fill(Color.clear)
                                                                     .frame(width: 93, height: 120)
-                                                                    .shadow(color: .black.opacity(0.8), radius:15, x: 0, y: 13)
+                                                                    .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 13)
                                                                 
-                                                                Image(systemName: "plus")
-                                                                    .font(.system(size: 30))
-                                                                    .foregroundColor(Color(hex: "875232"))
-                                                            }
-                                                        }
-                                                    } else if bookIndex < selectedBooks.count {
-                                                        ZStack {
-                                                            Rectangle()
-                                                                .fill(Color.clear)
-                                                                .frame(width: 93, height: 120)
-                                                                .shadow(color: .black.opacity(0.8), radius: 15, x: 0, y: 13)
-                                                            
-                                                            if let imageUrl = selectedBooks[bookIndex].imageLink {
-                                                                NavigationLink(destination: BookDetailView(book: selectedBooks[bookIndex])) {
-                                                                    AsyncImage(url: URL(string: imageUrl)) { phase in
-                                                                        switch phase {
-                                                                        case .success(let image):
-                                                                            image
-                                                                                .resizable()
-                                                                                .scaledToFill()
-                                                                                .frame(width: 93, height: 120)
-                                                                                .clipped()
-                                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                                        case .failure:
-                                                                            ZStack {
-                                                                                ShimmerBookCover(opacity: 0.8)
-                                                                                
-                                                                                // Add a small error indicator
-                                                                                Image(systemName: "exclamationmark.triangle.fill")
-                                                                                    .font(.system(size: 20))
-                                                                                    .foregroundColor(Color(hex: "DE5B23").opacity(0.8))
-                                                                                    .offset(y: -40)
-                                                                            }
-                                                                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                                        case .empty:
-                                                                            ShimmerBookCover(opacity: 0.8)
-                                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                                                                        @unknown default:
-                                                                            EmptyView()
-                                                                        }
+                                                                if let imageUrl = selectedBooks[bookIndex].imageLink {
+                                                                    NavigationLink(destination: BookDetailView(book: selectedBooks[bookIndex])) {
+                                                                        CachedImage(url: imageUrl)
                                                                     }
                                                                 }
                                                             }
-                                                        }
-                                                        .simultaneousGesture(
-                                                            LongPressGesture(minimumDuration: 0.5)
-                                                                .onEnded { _ in
-                                                                    bookToDelete = bookIndex
-                                                                    showingDeleteAlert = true
-                                                                }
-                                                        )
-                                                    } else {
-                                                        ZStack {
-                                                            Rectangle()
-                                                                .fill(Color.clear)
-                                                                .frame(width: 93, height: 120)
-                                                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                            .simultaneousGesture(
+                                                                LongPressGesture(minimumDuration: 0.5)
+                                                                    .onEnded { _ in
+                                                                        bookToDelete = bookIndex
+                                                                        showingDeleteAlert = true
+                                                                    }
+                                                            )
+                                                        } else {
+                                                            ZStack {
+                                                                Rectangle()
+                                                                    .fill(Color.clear)
+                                                                    .frame(width: 93, height: 120)
+                                                                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                                                            }
                                                         }
                                                     }
                                                 }
+                                                .offset(y: 10)
                                             }
-                                            .offset(y: 10)
+                                            
+                                            // Horizontal line
+                                            Rectangle()
+                                                .fill(Color(hex: "C89A69"))
+                                                .frame(width: UIScreen.main.bounds.width - 24, height: 12)
                                         }
-                                        
-                                        // Horizontal line
-                                        Rectangle()
-                                            .fill(Color(hex: "C89A69"))
-                                            .frame(width: UIScreen.main.bounds.width - 24, height: 12)
                                     }
                                 }
                             }
@@ -591,6 +570,12 @@ struct myshelf: View {
             }
             .onAppear {
                 loadUserShelves()
+                // To make sure we load cached images on app startup
+                _ = ImageCache.shared
+            }
+            .onDisappear {
+                // Save cached URLs when view disappears
+                ImageCache.shared.saveURLsToUserDefaults()
             }
             .navigationBarHidden(true)
         }
@@ -610,28 +595,37 @@ struct myshelf: View {
                 var loadedCategories = ["Favorites"]
                 var loadedShelfBooks: [String: [Book]] = [:]
                 
-                for (shelfName, bookIds) in userShelves {
-                    if !loadedCategories.contains(shelfName) {
-                        loadedCategories.append(shelfName)
+                await withTaskGroup(of: (String, [Book]).self) { group in
+                    for (shelfName, bookIds) in userShelves {
+                        if !loadedCategories.contains(shelfName) {
+                            loadedCategories.append(shelfName)
+                        }
+                        
+                        group.addTask {
+                            if !bookIds.isEmpty {
+                                let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
+                                
+                                if !uuidValues.isEmpty {
+                                    do {
+                                        let books: [Book] = try await supabaseManager.client
+                                            .from("Books")
+                                            .select()
+                                            .in("id", values: uuidValues)
+                                            .execute()
+                                            .value
+                                        
+                                        return (shelfName, books)
+                                    } catch {
+                                        return (shelfName, [])
+                                    }
+                                }
+                            }
+                            return (shelfName, [])
+                        }
                     }
                     
-                    if !bookIds.isEmpty {
-                        let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
-                        
-                        if !uuidValues.isEmpty {
-                            let books: [Book] = try await supabaseManager.client
-                                .from("Books")
-                                .select()
-                                .in("id", values: uuidValues)
-                                .execute()
-                                .value
-                            
-                            loadedShelfBooks[shelfName] = books
-                        } else {
-                            loadedShelfBooks[shelfName] = []
-                        }
-                    } else {
-                        loadedShelfBooks[shelfName] = []
+                    for await (shelfName, books) in group {
+                        loadedShelfBooks[shelfName] = books
                     }
                 }
                 
@@ -669,8 +663,8 @@ struct myshelf: View {
                     shelfBooks[shelfName] = []
                     selectedCategory = shelfName
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        refreshShelves()
+                    Task {
+                        await refreshShelves()
                     }
                 }
             } catch {
@@ -720,8 +714,8 @@ struct myshelf: View {
                     currentBooks.append(book)
                     shelfBooks[selectedCategory] = currentBooks
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        refreshShelves()
+                    Task {
+                        await refreshShelves()
                     }
                 }
             } catch {
@@ -751,8 +745,8 @@ struct myshelf: View {
                     currentBooks.remove(at: index)
                     shelfBooks[selectedCategory] = currentBooks
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        refreshShelves()
+                    Task {
+                        await refreshShelves()
                     }
                 }
             } catch {
@@ -778,57 +772,62 @@ struct myshelf: View {
         return index == selectedBooks.count
     }
     
-    private func refreshShelves() {
+    private func refreshShelves() async {
         guard let currentUser = supabaseManager.currentUser else {
             return
         }
         
-        // Don't set isLoading to true to avoid showing loading indicators
-        
-        Task {
-            do {
-                let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
-                
-                var loadedCategories = ["Favorites"]
-                var loadedShelfBooks: [String: [Book]] = [:]
-                
+        do {
+            let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
+            
+            var loadedCategories = ["Favorites"]
+            var loadedShelfBooks: [String: [Book]] = [:]
+            
+            await withTaskGroup(of: (String, [Book]).self) { group in
                 for (shelfName, bookIds) in userShelves {
                     if !loadedCategories.contains(shelfName) {
                         loadedCategories.append(shelfName)
                     }
                     
-                    if !bookIds.isEmpty {
-                        let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
-                        
-                        if !uuidValues.isEmpty {
-                            let books: [Book] = try await supabaseManager.client
-                                .from("Books")
-                                .select()
-                                .in("id", values: uuidValues)
-                                .execute()
-                                .value
+                    group.addTask {
+                        if !bookIds.isEmpty {
+                            let uuidValues = bookIds.compactMap { UUID(uuidString: $0) }
                             
-                            loadedShelfBooks[shelfName] = books
-                        } else {
-                            loadedShelfBooks[shelfName] = []
+                            if !uuidValues.isEmpty {
+                                do {
+                                    let books: [Book] = try await supabaseManager.client
+                                        .from("Books")
+                                        .select()
+                                        .in("id", values: uuidValues)
+                                        .execute()
+                                        .value
+                                    
+                                    return (shelfName, books)
+                                } catch {
+                                    return (shelfName, [])
+                                }
+                            }
                         }
-                    } else {
-                        loadedShelfBooks[shelfName] = []
+                        return (shelfName, [])
                     }
                 }
                 
-                await MainActor.run {
-                    categories = loadedCategories
-                    shelfBooks = loadedShelfBooks
-                    
-                    if !loadedCategories.contains(selectedCategory) {
-                        selectedCategory = "Favorites"
-                    }
+                for await (shelfName, books) in group {
+                    loadedShelfBooks[shelfName] = books
                 }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to refresh shelves: \(error.localizedDescription)"
+            }
+            
+            await MainActor.run {
+                categories = loadedCategories
+                shelfBooks = loadedShelfBooks
+                
+                if !loadedCategories.contains(selectedCategory) {
+                    selectedCategory = "Favorites"
                 }
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to refresh shelves: \(error.localizedDescription)"
             }
         }
     }
@@ -901,7 +900,8 @@ struct AddBooksToShelf: View {
                                         onBookSelected(book)
                                         dismiss()
                                     }
-                                }, isAdded: addedBooks.contains(book.id)
+                                },
+                                isAdded: addedBooks.contains(book.id)
                             )
                             .padding(.vertical, 1)
                         }
@@ -919,6 +919,130 @@ struct AddBooksToShelf: View {
             if let currentShelfBooks = shelfBooks[selectedCategory] {
                 addedBooks = Set(currentShelfBooks.map { $0.id })
             }
+        }
+    }
+}
+
+// After RefreshableScrollView, add a custom CachedImage component to be used in myshelf
+struct CachedImage: View {
+    let url: String
+    
+    var body: some View {
+        if !url.isEmpty {
+            if let cachedImage = ImageCache.shared.getImage(for: url) {
+                Image(uiImage: cachedImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 93, height: 120)
+                    .clipped()
+                    .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+            } else {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 93, height: 120)
+                            .clipped()
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                            .onAppear {
+                                // Save to cache using a compatible approach
+                                #if os(iOS)
+                                // Use a UIKit approach which works on all iOS versions
+                                DispatchQueue.global(qos: .background).async {
+                                    if let imageURL = URL(string: url), let data = try? Data(contentsOf: imageURL),
+                                       let uiImage = UIImage(data: data) {
+                                        DispatchQueue.main.async {
+                                            ImageCache.shared.setImage(uiImage, for: url)
+                                        }
+                                    }
+                                }
+                                #endif
+                            }
+                    case .failure:
+                        ZStack {
+                            ShimmerBookCover(opacity: 0.8)
+                            
+                            // Add a small error indicator
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(Color(hex: "DE5B23").opacity(0.8))
+                                .offset(y: -40)
+                        }
+                        .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                    case .empty:
+                        ShimmerBookCover(opacity: 0.8)
+                            .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+        } else {
+            ShimmerBookCover(opacity: 0.8)
+                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+        }
+    }
+}
+
+// After CachedImage, add a specialized version for BookCards
+
+struct BookCardCachedImage: View {
+    let url: String
+    
+    var body: some View {
+        if !url.isEmpty {
+            if let cachedImage = ImageCache.shared.getImage(for: url) {
+                Image(uiImage: cachedImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 45, height: 60)
+                    .clipped()
+            } else {
+                AsyncImage(url: URL(string: url)) { phase in
+                    switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: 45, height: 60)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 45, height: 60)
+                            .clipped()
+                            .onAppear {
+                                // Save to cache using a compatible approach
+                                #if os(iOS)
+                                // Use a UIKit approach which works on all iOS versions
+                                DispatchQueue.global(qos: .background).async {
+                                    if let imageURL = URL(string: url), let data = try? Data(contentsOf: imageURL),
+                                       let uiImage = UIImage(data: data) {
+                                        DispatchQueue.main.async {
+                                            ImageCache.shared.setImage(uiImage, for: url)
+                                        }
+                                    }
+                                }
+                                #endif
+                            }
+                    case .failure:
+                        Image("mvc")
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 45, height: 60)
+                            .clipped()
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+        } else {
+            Image("mvc")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 45, height: 60)
+                .clipped()
+                .background(Color.white)
         }
     }
 }
@@ -947,6 +1071,79 @@ extension Color {
             blue:  Double(b) / 255,
             opacity: Double(a) / 255
         )
+    }
+}
+
+// Define it outside of RefreshableScrollView
+struct ScrollViewOffsetPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+// Keep the RefreshableScrollView since it's still used in myshelf.swift
+struct RefreshableScrollView<Content: View>: View {
+    var action: () async -> Void
+    var content: Content
+    
+    @State private var isRefreshing = false
+    
+    init(action: @escaping () async -> Void, @ViewBuilder content: () -> Content) {
+        self.action = action
+        self.content = content()
+    }
+    
+    var body: some View {
+        ScrollView {
+            ZStack(alignment: .top) {
+                MovingView(action: action, isRefreshing: $isRefreshing)
+                    .opacity(isRefreshing ? 0 : 1)
+                
+                VStack {
+                    if isRefreshing {
+                        VStack {
+                            Spacer().frame(height: 16)
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle())
+                                .scaleEffect(1.3)
+                                .tint(Color(hex: "875232"))
+                            Spacer().frame(height: 16)
+                        }
+                    }
+                    content
+                }
+            }
+        }
+    }
+    
+    struct MovingView: View {
+        var action: () async -> Void
+        @Binding var isRefreshing: Bool
+        @State private var offset: CGFloat = 0
+        
+        var body: some View {
+            GeometryReader { geo in
+                if geo.frame(in: .global).minY > 0 {
+                    Color.clear
+                        .preference(key: ScrollViewOffsetPreferenceKey.self, value: geo.frame(in: .global).minY)
+                        .onPreferenceChange(ScrollViewOffsetPreferenceKey.self) { value in
+                            if value > 120 && !isRefreshing {
+                                isRefreshing = true
+                                
+                                Task {
+                                    await action()
+                                    withAnimation {
+                                        isRefreshing = false
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+            .frame(height: 0)
+        }
     }
 }
 

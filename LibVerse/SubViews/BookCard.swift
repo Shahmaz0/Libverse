@@ -1,4 +1,53 @@
 import SwiftUI
+// Remove CommonCrypto import since it's not used directly
+// import CommonCrypto
+
+// Remove the implementation-only import
+// @_implementationOnly import LibVerse.Utils.ImageCache
+
+// Instead, use a regular import for the entire application
+// import LibVerse
+
+// Forward declaration of a wrapper for BookCardCachedImage
+struct BookImageView: View {
+    let url: String
+    
+    var body: some View {
+        if url.isEmpty {
+            Image("mvc")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 45, height: 60)
+                .clipped()
+                .background(Color.white)
+        } else {
+            // Use standard AsyncImage since we handle caching in myshelf.swift
+            AsyncImage(url: URL(string: url)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .frame(width: 45, height: 60)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 45, height: 60)
+                        .clipped()
+                case .failure:
+                    Image("mvc")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 45, height: 60)
+                        .clipped()
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .frame(width: 45, height: 60)
+            .clipped()
+        }
+    }
+}
 
 struct BookCard: View {
     let BookImage: String // This is a URL string
@@ -17,36 +66,8 @@ struct BookCard: View {
                         .stroke(Color.black, lineWidth: 0.5)
                         .frame(width: 50, height: 65)
                     
-                    if BookImage.isEmpty {
-                        Image("mvc")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 45, height: 60)
-                            .clipped()
-                            .background(Color.white)
-                    } else {
-                        AsyncImage(url: URL(string: BookImage)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: 45, height: 60)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 45, height: 60)
-                                    .clipped()
-                            case .failure:
-                                Image("mvc")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 45, height: 60)
-                                    .clipped()
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                    }
+                    // Use our wrapper view
+                    BookImageView(url: BookImage)
                 }
                 .frame(width: 44, height: 59)
                 .padding(.leading, 10)
@@ -109,6 +130,8 @@ struct BookCard_Previews: PreviewProvider {
             title: "Great Gatsby",
             author: "F. Scott Fitzgerald",
             description: "Nick Carraway, a young man from Minnesota.",
+            showPlusButton: false,
+            onPlusButtonTapped: {},
             isAdded: false
         )
         .padding()
