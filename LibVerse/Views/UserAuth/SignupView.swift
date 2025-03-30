@@ -127,7 +127,6 @@ struct SignUpView: View {
                             .foregroundColor(.black)
                             .font(.subheadline)
                     }
-
                 }
                 .padding()
             }
