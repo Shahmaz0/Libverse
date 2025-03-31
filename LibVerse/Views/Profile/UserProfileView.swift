@@ -7,6 +7,7 @@ struct UserProfileView: View {
     @State private var showEditProfile = false
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
+    @Environment(\.presentationMode) var presentationMode
     
     init(showMainApp: Binding<Bool>, showUserInitialView: Binding<Bool>) {
         _showMainApp = showMainApp
@@ -19,62 +20,76 @@ struct UserProfileView: View {
     }
     
     var body: some View {
-        NavigationView {
-            ZStack(alignment: .bottom) {
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Profile Header
-                        profileHeader
-                        
-                        // Fines Card
-                        finesCard
-                        
-                        // Tab Picker
-                        tabPicker
-                        
-                        // Content based on selected tab
-                        if selectedTab == 0 {
-                            borrowedBooksList
-                        } else {
-                            accountDetails
-                        }
+        ZStack(alignment: .bottom) {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Profile Header
+                    profileHeader
+                    
+                    // Fines Card
+                    finesCard
+                    
+                    // Tab Picker
+                    tabPicker
+                    
+                    // Content based on selected tab
+                    if selectedTab == 0 {
+                        borrowedBooksList
+                    } else {
+                        accountDetails
                     }
-                    .padding(.vertical)
-                    .padding(.bottom, 80) // Add padding for the logout button
                 }
-                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-                
-                // Fixed Logout Button at bottom
-                VStack {
-                    Button(action: {
-                        Task {
-                            try? await SupabaseManager.shared.signOut()
-                            showMainApp = false
-                            showUserInitialView = true
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                            Text("Logout")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                        .foregroundColor(.white)
-                        .overlay(RoundedRectangle(cornerRadius: 0)
-                            .stroke(Color.black, lineWidth: 1.25))
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 20)
-                }
-                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                .padding(.vertical)
+                .padding(.bottom, 80) // Add padding for the logout button
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showEditProfile) {
-                EditProfileView(profile: profile)
+            
+            // Fixed Logout Button at bottom
+            VStack {
+                Button(action: {
+                    Task {
+                        try? await SupabaseManager.shared.signOut()
+                        showMainApp = false
+                        showUserInitialView = true
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                        Text("Logout")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                    .foregroundColor(.white)
+                    .overlay(RoundedRectangle(cornerRadius: 0)
+                        .stroke(Color.black, lineWidth: 1.25))
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 20)
             }
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        }
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .navigationTitle("Profile")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                        Text("Back")
+                            .fontWeight(.regular)
+                    }
+                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+                }
+            }
+        }
+        .sheet(isPresented: $showEditProfile) {
+            EditProfileView(profile: profile)
         }
     }
     

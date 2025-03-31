@@ -7,6 +7,23 @@
 
 import SwiftUI
 
+// Add MemberShelves model
+struct MemberShelves: Codable {
+    let id: UUID
+    let memberId: UUID
+    let shelfName: String
+    let bookId: UUID
+    let createdAt: String
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case memberId = "member_id"
+        case shelfName = "shelf_name"
+        case bookId = "book_id"
+        case createdAt = "created_at"
+    }
+}
+
 struct BookDetailView: View {
     let book: Book
     @Environment(\.presentationMode) var presentationMode
@@ -18,6 +35,8 @@ struct BookDetailView: View {
     @State private var refreshTrigger: Bool = false
     @State private var isInBag: Bool = false
     @State private var showingReturnQRCode = false
+    @State private var showingAddToShelf = false
+    @State private var isInAnyShelf: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -287,11 +306,27 @@ struct BookDetailView: View {
                                         Task {
                                             if let userId = supabaseManager.currentUser?.id {
                                                 do {
+                                                    // Update favorites status
                                                     try await supabaseManager.updateFavourites(
                                                         userId: userId,
                                                         bookId: book.id,
                                                         isFavourite: isFavorite
                                                     )
+                                                    
+                                                    // Add or remove from Favorites shelf
+                                                    if isFavorite {
+                                                        try await supabaseManager.addBookToShelf(
+                                                            userId: userId,
+                                                            shelfName: "Favorites",
+                                                            bookId: book.id
+                                                        )
+                                                    } else {
+                                                        try await supabaseManager.removeBookFromShelf(
+                                                            userId: userId,
+                                                            shelfName: "Favorites",
+                                                            bookId: book.id
+                                                        )
+                                                    }
                                                 } catch {
                                                     print("Error updating favourites: \(error)")
                                                 }
@@ -344,9 +379,9 @@ struct BookDetailView: View {
                             .overlay(
                                 VStack {
                                     Button(action: {
-                                        presentationMode.wrappedValue.dismiss()
+                                        showingAddToShelf = true
                                     }) {
-                                        Image(systemName: "books.vertical.fill")
+                                        Image(systemName: isInAnyShelf ? "books.vertical.fill" : "books.vertical")
                                             .resizable()
                                             .frame(width: 20, height: 20)
                                             .foregroundColor(.black)
@@ -480,6 +515,18 @@ struct BookDetailView: View {
                                 isBookIssued = true
                                 currentIssueId = issue.id
                             }
+                            
+                            // Check if book is in any shelf
+                            let shelvesQuery = supabaseManager.client
+                                .from("member_shelves")
+                                .select()
+                                .eq("member_id", value: userId)
+                                .eq("book_id", value: book.id)
+                            
+                            let shelvesResponse: [MemberShelves] = try await shelvesQuery.execute().value
+                            await MainActor.run {
+                                isInAnyShelf = !shelvesResponse.isEmpty
+                            }
                         } catch {
                             print("Error fetching data: \(error)")
                         }
@@ -489,6 +536,9 @@ struct BookDetailView: View {
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .id(refreshTrigger)
+        .sheet(isPresented: $showingAddToShelf) {
+            AddToShelfView(book: book, isInAnyShelf: $isInAnyShelf)
+        }
     }
     
     private func startCheckingIssueStatus() {
@@ -529,6 +579,210 @@ struct BookDetailView: View {
             }
         } catch {
             print("Error checking issue status: \(error)")
+        }
+    }
+}
+
+struct AddToShelfView: View {
+    @Environment(\.dismiss) var dismiss
+    @State private var searchText: String = ""
+    @State private var categories: [String] = []
+    @State private var showingAddModal = false
+    @State private var showSuccessMessage = false
+    @State private var successMessage = ""
+    let book: Book
+    @Binding var isInAnyShelf: Bool
+    @EnvironmentObject var supabaseManager: SupabaseManager
+    
+    var filteredCategories: [String] {
+        if searchText.isEmpty {
+            return categories
+        } else {
+            return categories.filter { $0.localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+    
+    var body: some View {
+        ZStack {
+            Color(hex: "FCEFD5")
+                .ignoresSafeArea()
+            
+            VStack(spacing: 20) {
+                // Header
+                HStack {
+                    Text("Add to Shelf")
+                        .font(.custom("Charter", size: 20))
+                        .bold()
+                        .foregroundColor(.black)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 20))
+                            .foregroundColor(.black)
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.top, 20)
+                
+                // Search bar
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(Color(hex: "875232"))
+                        .padding(.leading, 10)
+                    
+                    TextField("Search shelves...", text: $searchText)
+                        .font(.custom("Charter", size: 16))
+                        .padding(.vertical, 12)
+                }
+                .background(Color(hex: "FCEFD5"))
+                .overlay(
+                    Rectangle()
+                        .stroke(Color.black, lineWidth: 1)
+                )
+                .padding(.horizontal)
+                
+                // Shelf list
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(filteredCategories, id: \.self) { category in
+                            Button(action: {
+                                addBookToShelf(category)
+                            }) {
+                                HStack {
+                                    Text(category)
+                                        .font(.custom("Charter", size: 16))
+                                        .foregroundColor(.black)
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "plus")
+                                        .foregroundColor(Color(hex: "DE5B23"))
+                                }
+                                .padding()
+                                .background(Color(hex: "FCEFD5"))
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.black, lineWidth: 0.5)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                // Add new shelf button
+                Button(action: {
+                    showingAddModal = true
+                }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(Color(hex: "DE5B23"))
+                        
+                        Text("Create New Shelf")
+                            .font(.custom("Charter", size: 16))
+                            .foregroundColor(Color(hex: "DE5B23"))
+                    }
+                    .padding()
+                    .frame(maxWidth: .infinity)
+                    .background(Color(hex: "FCEFD5"))
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color(hex: "DE5B23"), lineWidth: 1)
+                    )
+                }
+                .padding(.horizontal)
+                .padding(.bottom, 20)
+            }
+            
+            // Success message overlay
+            if showSuccessMessage {
+                VStack {
+                    Spacer()
+                    Text(successMessage)
+                        .font(.custom("Charter", size: 16))
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color(hex: "DE5B23"))
+                        .cornerRadius(8)
+                    Spacer()
+                }
+                .transition(.opacity)
+            }
+        }
+        .sheet(isPresented: $showingAddModal) {
+            AddModalView { newShelfName in
+                createNewShelf(newShelfName)
+            }
+        }
+        .onAppear {
+            loadUserShelves()
+        }
+    }
+    
+    private func loadUserShelves() {
+        guard let currentUser = supabaseManager.currentUser else { return }
+        
+        Task {
+            do {
+                let userShelves = try await supabaseManager.fetchUserShelves(userId: currentUser.id)
+                await MainActor.run {
+                    categories = Array(userShelves.keys)
+                }
+            } catch {
+                print("Error loading shelves: \(error)")
+            }
+        }
+    }
+    
+    private func createNewShelf(_ shelfName: String) {
+        guard let currentUser = supabaseManager.currentUser else { return }
+        
+        Task {
+            do {
+                try await supabaseManager.createShelf(userId: currentUser.id, shelfName: shelfName)
+                await MainActor.run {
+                    categories.append(shelfName)
+                }
+            } catch {
+                print("Error creating shelf: \(error)")
+            }
+        }
+    }
+    
+    private func addBookToShelf(_ shelfName: String) {
+        guard let currentUser = supabaseManager.currentUser else { return }
+        
+        Task {
+            do {
+                try await supabaseManager.addBookToShelf(
+                    userId: currentUser.id,
+                    shelfName: shelfName,
+                    bookId: book.id
+                )
+                await MainActor.run {
+                    // Update isInAnyShelf if the shelf is not Favorites
+                    if shelfName != "Favorites" {
+                        isInAnyShelf = true
+                    }
+                    
+                    successMessage = "Book added to \(shelfName) shelf"
+                    withAnimation {
+                        showSuccessMessage = true
+                    }
+                    
+                    // Hide the success message after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation {
+                            showSuccessMessage = false
+                        }
+                    }
+                }
+            } catch {
+                print("Error adding book to shelf: \(error)")
+            }
         }
     }
 }

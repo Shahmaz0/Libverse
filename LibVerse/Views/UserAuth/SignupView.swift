@@ -17,6 +17,28 @@ struct SignUpView: View {
     @State private var isLoading: Bool = false
     @State private var navigateToOTP: Bool = false
 
+    private func isPasswordValid(_ password: String) -> Bool {
+        let hasCapitalLetter = password.contains { $0.isUppercase }
+        let hasDigit = password.contains { $0.isNumber }
+        let hasSpecialCharacter = password.contains { !$0.isLetter && !$0.isNumber && !$0.isWhitespace }
+        let hasMinimumLength = password.count >= 6
+        
+        return hasCapitalLetter && hasDigit && hasSpecialCharacter && hasMinimumLength
+    }
+
+    private var passwordCriteria: [(String, Bool)] {
+        [
+            ("At least 6 characters", password.count >= 6),
+            ("Contains a capital letter", password.contains { $0.isUppercase }),
+            ("Contains a number", password.contains { $0.isNumber }),
+            ("Contains a special character", password.contains { !$0.isLetter && !$0.isNumber && !$0.isWhitespace })
+        ]
+    }
+
+    private var unmetCriteria: [String] {
+        passwordCriteria.filter { !$0.1 }.map { $0.0 }
+    }
+
     private var isFormValid: Bool {
         !firstName.isEmpty &&
         !lastName.isEmpty &&
@@ -26,7 +48,7 @@ struct SignUpView: View {
         !password.isEmpty &&
         password == confirmPassword &&
         collegeEmail.hasSuffix("@gmail.com") &&
-        password.count >= 6
+        isPasswordValid(password)
     }
 
     var body: some View {
@@ -59,6 +81,20 @@ struct SignUpView: View {
                         customTextField(placeholder: "College Name", text: $collegeName)
                         customTextField(placeholder: "College Email", text: $collegeEmail, keyboardType: .emailAddress, autocapitalization: .none)
                         customSecureField(placeholder: "Password", text: $password)
+                        
+                        // Only show unmet password criteria
+                        if !password.isEmpty && !unmetCriteria.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(unmetCriteria, id: \.self) { criteria in
+                                    Text("• " + criteria)
+                                        .font(.custom("Courier", size: 12))
+                                        .foregroundColor(.red)
+                                }
+                            }
+                            .padding(.leading, 4)
+                            .padding(.top, -10)
+                        }
+                        
                         customSecureField(placeholder: "Confirm Password", text: $confirmPassword)
                     }
                     
@@ -180,4 +216,8 @@ struct SignUpView: View {
             }
         }
     }
+}
+
+#Preview{
+    SignUpView()
 }

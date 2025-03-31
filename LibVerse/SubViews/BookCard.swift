@@ -1,4 +1,53 @@
 import SwiftUI
+// Remove CommonCrypto import since it's not used directly
+// import CommonCrypto
+
+// Remove the implementation-only import
+// @_implementationOnly import LibVerse.Utils.ImageCache
+
+// Instead, use a regular import for the entire application
+// import LibVerse
+
+// Forward declaration of a wrapper for BookCardCachedImage
+struct BookImageView: View {
+    let url: String
+    
+    var body: some View {
+        if url.isEmpty {
+            Image("mvc")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 45, height: 60)
+                .clipped()
+                .background(Color.white)
+        } else {
+            // Use standard AsyncImage since we handle caching in myshelf.swift
+            AsyncImage(url: URL(string: url)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                        .frame(width: 45, height: 60)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 45, height: 60)
+                        .clipped()
+                case .failure:
+                    Image("mvc")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 45, height: 60)
+                        .clipped()
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .frame(width: 45, height: 60)
+            .clipped()
+        }
+    }
+}
 
 struct BookCard: View {
     let BookImage: String // This is a URL string
@@ -6,6 +55,8 @@ struct BookCard: View {
     let author: String
     let description: String
     var showPlusButton: Bool = false // New parameter with default value false
+    var onPlusButtonTapped: (() -> Void)? = nil // New parameter for handling plus button tap
+    var isAdded: Bool = false // Changed to regular Bool with default value
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -15,36 +66,8 @@ struct BookCard: View {
                         .stroke(Color.black, lineWidth: 0.5)
                         .frame(width: 50, height: 65)
                     
-                    if BookImage.isEmpty {
-                        Image("mvc")
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 45, height: 60)
-                            .clipped()
-                            .background(Color.white)
-                    } else {
-                        AsyncImage(url: URL(string: BookImage)) { phase in
-                            switch phase {
-                            case .empty:
-                                ProgressView()
-                                    .frame(width: 45, height: 60)
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 45, height: 60)
-                                    .clipped()
-                            case .failure:
-                                Image("mvc")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 45, height: 60)
-                                    .clipped()
-                            @unknown default:
-                                EmptyView()
-                            }
-                        }
-                    }
+                    // Use our wrapper view
+                    BookImageView(url: BookImage)
                 }
                 .frame(width: 44, height: 59)
                 .padding(.leading, 10)
@@ -73,15 +96,25 @@ struct BookCard: View {
                 .padding(.vertical, 8)
                 
                 Spacer()
-                Image(systemName: showPlusButton ? "plus.circle" : "chevron.right")
-                    .foregroundColor(.black)
-                    .font(.system(size: showPlusButton ? 24 : 16))
-                    //.padding(.trailing, 100)
+                if showPlusButton {
+                    Button(action: {
+                        onPlusButtonTapped?()
+                    }) {
+                        Image(systemName: isAdded ? "checkmark.circle.fill" : "plus.circle")
+                            .foregroundColor(isAdded ? .green : .black)
+                            .font(.system(size: 24))
+                    }
                     .padding(.leading, -35)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.black)
+                        .font(.system(size: 16))
+                        .padding(.leading, -35)
+                }
             }
-            .frame(height: 90)
+            .frame(maxWidth: .infinity, maxHeight: 90)
         }
-        .frame(width: 393, height: 90, alignment: .center)
+        .frame(maxWidth: .infinity, maxHeight: 90)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .cornerRadius(0)
         .shadow(color: .black.opacity(0.5), radius: 0, x: 0, y: 1)
@@ -96,7 +129,10 @@ struct BookCard_Previews: PreviewProvider {
             BookImage: "",
             title: "Great Gatsby",
             author: "F. Scott Fitzgerald",
-            description: "Nick Carraway, a young man from Minnesota."
+            description: "Nick Carraway, a young man from Minnesota.",
+            showPlusButton: false,
+            onPlusButtonTapped: {},
+            isAdded: false
         )
         .padding()
     }

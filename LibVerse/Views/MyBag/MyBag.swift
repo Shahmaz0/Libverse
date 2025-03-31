@@ -8,8 +8,10 @@
 import SwiftUI
 
 struct MyBag: View {
-    @StateObject private var viewModel = MyBagViewModel()
+    @StateObject var viewModel = MyBagViewModel()
     @EnvironmentObject var supabaseManager: SupabaseManager
+    @State private var isEditing = false
+    @State private var selectedBooks: Set<UUID> = []
     
     var body: some View {
         ZStack {
@@ -17,7 +19,7 @@ struct MyBag: View {
                 .ignoresSafeArea()
             
             VStack {
-                // Header
+
                 HStack(spacing: 0) {
                     Rectangle()
                         .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -62,11 +64,32 @@ struct MyBag: View {
                             alignment: .bottom
                         )
                         .overlay(
-                            Image(systemName: "square.and.pencil")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .padding(.trailing, 15)
-                                .foregroundColor(.black),
+                            Group {
+                                if isEditing {
+                                    Button(action: {
+                                        withAnimation {
+                                            isEditing = false
+                                            selectedBooks.removeAll()
+                                        }
+                                    }) {
+                                        Image(systemName: "xmark")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.black)
+                                    }
+                                } else {
+                                    Button(action: {
+                                        withAnimation {
+                                            isEditing = true
+                                        }
+                                    }) {
+                                        Image(systemName: "square.and.pencil")
+                                            .resizable()
+                                            .frame(width: 20, height: 20)
+                                            .foregroundColor(.black)
+                                    }
+                                }
+                            },
                             alignment: .center
                         )
                 }
@@ -80,7 +103,7 @@ struct MyBag: View {
                 .frame(maxWidth: .infinity)
                 .padding(.horizontal, -20)
                 
-                // Content
+                // Content section of the MyBag view (only showing the modified part)
                 if viewModel.isLoading {
                     ProgressView()
                         .padding(.top, 50)
@@ -93,30 +116,86 @@ struct MyBag: View {
                     ScrollView {
                         VStack(spacing: 1) {
                             ForEach(viewModel.bagBooks, id: \.id) { book in
-                                BookCard(
-                                    BookImage: book.imageLink ?? "",
-                                    title: book.title,
-                                    author: book.author.joined(separator: ", "),
-                                    description: book.Description ?? "No description available"
-                                )
+                                HStack(alignment: .center, spacing: 0) {
+                                    if isEditing {
+                                        Button(action: {
+                                            withAnimation {
+                                                if selectedBooks.contains(book.id) {
+                                                    selectedBooks.remove(book.id)
+                                                } else {
+                                                    selectedBooks.insert(book.id)
+                                                }
+                                            }
+                                        }) {
+                                            Image(systemName: selectedBooks.contains(book.id) ? "checkmark.circle.fill" : "circle")
+                                                .resizable()
+                                                .frame(width: 24, height: 24)
+                                                .foregroundColor(selectedBooks.contains(book.id) ?
+                                                    Color(red: 255/255, green: 111/255, blue: 45/255) : .gray)
+                                        }
+                                        .padding(.trailing, 12)
+                                        .padding(.leading, 30)
+                                    }
+                                    
+                                    BookCard(
+                                        BookImage: book.imageLink ?? "",
+                                        title: book.title,
+                                        author: book.author.joined(separator: ", "),
+                                        description: book.Description ?? "No description available"
+                                    )
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.trailing, 20)
+                                }
+                                .transition(.opacity)
                             }
                         }
                     }
                 }
                 Spacer()
                 
-                Button(action: {
-                    print("Issue All clicked.")
-                }) {
-                    Text("Issue all")
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                        .foregroundColor(.white)
-                        .cornerRadius(0)
+                if isEditing {
+                    HStack {
+                        Button(action: {
+                            // Delete selected books action
+                            print("Delete selected books: \(selectedBooks)")
+                        }) {
+                            Text("Delete")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.red)
+                                .foregroundColor(.white)
+                                .cornerRadius(0)
+                        }
+                        .frame(width: 160, height: 30, alignment: .center)
+                        
+                        Button(action: {
+                            // Issue selected books action
+                            print("Issue selected books: \(selectedBooks)")
+                        }) {
+                            Text("Issue Selected")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                                .foregroundColor(.white)
+                                .cornerRadius(0)
+                        }
+                        .frame(width: 160, height: 30, alignment: .center)
+                    }
+                    .padding(.bottom, 20)
+                } else {
+                    Button(action: {
+                        print("Issue All clicked.")
+                    }) {
+                        Text("Issue all")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .foregroundColor(.white)
+                            .cornerRadius(0)
+                    }
+                    .frame(width: 345, height: 30, alignment: .center)
+                    .padding(.bottom, 20)
                 }
-                .frame(width: 345, height: 30, alignment: .center)
-                .padding(.bottom, 20)
             }
         }
         .onAppear {
@@ -133,7 +212,6 @@ class MyBagViewModel: ObservableObject {
     
     func fetchBagBooks() {
         guard let currentUser = supabaseManager.currentUser else {
-            // If no user is logged in, show empty state
             self.bagBooks = []
             return
         }
@@ -143,7 +221,6 @@ class MyBagViewModel: ObservableObject {
         
         Task {
             do {
-                // 1. Fetch the current user's bag book IDs from Member table
                 let query = supabaseManager.client
                     .from("Member")
                     .select()
@@ -159,10 +236,8 @@ class MyBagViewModel: ObservableObject {
                     return
                 }
                 
-                // Handle optional myBag array
                 let bagIds = member.myBag
                 
-                // 2. If the user has no books in bag, return empty
                 if bagIds.isEmpty {
                     await MainActor.run {
                         self.isLoading = false
@@ -171,10 +246,8 @@ class MyBagViewModel: ObservableObject {
                     return
                 }
                 
-                // Convert array of bag UUID strings to an array of UUIDs for querying
                 let bookIds = bagIds.compactMap { UUID(uuidString: $0) }
                 
-                // 3. Fetch all bag books at once using the array of UUIDs
                 let bookQuery = supabaseManager.client
                     .from("Books")
                     .select()
@@ -199,6 +272,41 @@ class MyBagViewModel: ObservableObject {
 }
 
 #Preview {
-    MyBag()
+    let mockViewModel = MyBagViewModel()
+    mockViewModel.bagBooks = [
+        Book(
+            id: UUID(),
+            title: "The Great Gatsby",
+            author: ["F. Scott Fitzgerald"],
+            genre: "Classic",
+            publicationDate: "1925",
+            totalCopies: 10,
+            availableCopies: 5,
+            ISBN: "9780743273565",
+            Description: "A story of wealth, love, and the American Dream in the 1920s.",
+            shelfLocation: "Fiction A1",
+            dateAdded: "2023-01-15",
+            publisher: "Scribner",
+            imageLink: "https://example.com/gatsby.jpg"
+        ),
+        Book(
+            id: UUID(),
+            title: "To Kill a Mockingbird",
+            author: ["Harper Lee"],
+            genre: "Fiction",
+            publicationDate: "1960",
+            totalCopies: 8,
+            availableCopies: 3,
+            ISBN: "9780061120084",
+            Description: "A powerful story of racial injustice and moral growth in the American South.",
+            shelfLocation: "Fiction B2",
+            dateAdded: "2023-02-20",
+            publisher: "J. B. Lippincott & Co.",
+            imageLink: "https://example.com/mockingbird.jpg"
+        )
+    ]
+    mockViewModel.isLoading = false
+    
+    return MyBag(viewModel: mockViewModel)
         .environmentObject(SupabaseManager.shared)
 }
