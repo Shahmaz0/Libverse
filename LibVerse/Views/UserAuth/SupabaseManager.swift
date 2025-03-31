@@ -19,8 +19,9 @@ struct Member: Codable {
     var myBag: [String]
     var shelves: [String: [String]]? // Dictionary mapping shelf names to arrays of book IDs
     let created_at: Date?
+    let userRole: String? // New field for user role - "member", "librarian", or "admin"
     
-    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], shelves: [String: [String]]? = ["Favorites": []], created_at: Date? = nil) {
+    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], shelves: [String: [String]]? = ["Favorites": []], created_at: Date? = nil, userRole: String? = "member") {
         self.id = id
         self.email = email
         self.password = password
@@ -30,10 +31,11 @@ struct Member: Codable {
         self.myBag = mybag
         self.shelves = shelves
         self.created_at = created_at
+        self.userRole = userRole
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, email, password, firstName, lastName, favourites, myBag, shelves, created_at
+        case id, email, password, firstName, lastName, favourites, myBag, shelves, created_at, userRole
     }
     
     init(from decoder: Decoder) throws {
@@ -46,6 +48,7 @@ struct Member: Codable {
         favourites = try container.decode([String].self, forKey: .favourites)
         myBag = try container.decode([String].self, forKey: .myBag)
         created_at = try container.decodeIfPresent(Date.self, forKey: .created_at)
+        userRole = try container.decodeIfPresent(String.self, forKey: .userRole)
         
         // Special handling for shelves as JSONB
         if let shelvesObj = try? container.decodeIfPresent([String: [String]].self, forKey: .shelves) {
@@ -98,6 +101,7 @@ struct Member: Codable {
         try container.encode(favourites, forKey: .favourites)
         try container.encode(myBag, forKey: .myBag)
         try container.encodeIfPresent(created_at, forKey: .created_at)
+        try container.encodeIfPresent(userRole, forKey: .userRole)
         
         // Ensure shelves is encoded as a proper JSON object
         if let shelves = shelves {
@@ -149,6 +153,7 @@ class SupabaseManager: ObservableObject {
     @Published var client: SupabaseClient
     @Published var currentUser: User?
     @Published var currentSession: Session?
+    @Published var currentMember: Member?
     
 
     private let supabaseURL = URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!
@@ -190,6 +195,9 @@ class SupabaseManager: ObservableObject {
             self.currentUser = session.user
             self.currentSession = session
         }
+        
+        // Fetch member data after login
+        await fetchCurrentMember()
         
         print("User ID: \(session.user.id)")
         return session
@@ -243,7 +251,7 @@ class SupabaseManager: ObservableObject {
     }
     
     // Function to save member data to Supabase "Member" table
-    func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String) async throws {
+    func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String, userRole: String = "member") async throws {
         let member = Member(
             id: userId,
             email: email,
@@ -251,7 +259,8 @@ class SupabaseManager: ObservableObject {
             lastName: lastName,
             favourites: [],
             mybag: [],
-            shelves: ["Favorites": []]  // Initialize with default Favorites shelf
+            shelves: ["Favorites": []],  // Initialize with default Favorites shelf
+            userRole: userRole
         )
         
         do {
@@ -287,6 +296,9 @@ class SupabaseManager: ObservableObject {
                     self.currentUser = session.user
                     self.currentSession = session
                 }
+                
+                // Fetch member data after login
+                await fetchCurrentMember()
                 
                 return session
             } else {
@@ -358,7 +370,8 @@ class SupabaseManager: ObservableObject {
                     firstName: "",
                     lastName: "",
                     favourites: [],
-                    mybag: addToBag ? [bookId.uuidString] : []
+                    mybag: addToBag ? [bookId.uuidString] : [],
+                    userRole: "member"
                 )
                 
                 try await client
@@ -408,7 +421,10 @@ class SupabaseManager: ObservableObject {
                    email: currentUser?.email ?? "",
                    firstName: "",
                    lastName: "",
-                   favourites: isFavourite ? [bookId.uuidString] : []
+                   favourites: isFavourite ? [bookId.uuidString] : [],
+                   mybag: [],
+                   shelves: ["Favorites": []],
+                   userRole: "member"
                )
                
                try await client
@@ -495,7 +511,8 @@ class SupabaseManager: ObservableObject {
                    lastName: "",
                    favourites: [],
                    mybag: [],
-                   shelves: initialShelves
+                   shelves: initialShelves,
+                   userRole: "member"
                )
                
                let insertResult = try await client
@@ -601,7 +618,8 @@ class SupabaseManager: ObservableObject {
                    lastName: "",
                    favourites: [],
                    mybag: [],
-                   shelves: initialShelves
+                   shelves: initialShelves,
+                   userRole: "member"
                )
                
                let insertResult = try await client
@@ -686,6 +704,39 @@ class SupabaseManager: ObservableObject {
        } catch {
            print("Error removing book from shelf: \(error)")
            throw error
+       }
+   }
+   
+   // Add a function to check if the current user is a librarian
+   func isLibrarian() -> Bool {
+       return currentMember?.userRole?.lowercased() == "librarian"
+   }
+   
+   // Fetch current member data
+   func fetchCurrentMember() async {
+       guard let userId = currentUser?.id else {
+           print("Cannot fetch member: User not logged in")
+           return
+       }
+       
+       do {
+           let response: [Member] = try await client
+               .from("Member")
+               .select()
+               .eq("id", value: userId)
+               .execute()
+               .value
+           
+           if let member = response.first {
+               DispatchQueue.main.async {
+                   self.currentMember = member
+                   print("Current member data loaded: \(member.firstName) \(member.lastName), Role: \(member.userRole ?? "member")")
+               }
+           } else {
+               print("No member record found for user ID: \(userId)")
+           }
+       } catch {
+           print("Error fetching member data: \(error)")
        }
    }
 }
