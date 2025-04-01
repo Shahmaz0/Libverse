@@ -49,9 +49,19 @@ struct UserProfileView: View {
             VStack {
                 Button(action: {
                     Task {
-                        try? await SupabaseManager.shared.signOut()
-                        showMainApp = false
-                        showUserInitialView = true
+                        do {
+                            // Clear user preferences before signing out
+                            UserPreferences.shared.clearAllPreferences()
+                            
+                            // Sign out from Supabase
+                            try await SupabaseManager.shared.signOut()
+                            
+                            // Update UI state
+                            showMainApp = false
+                            showUserInitialView = true
+                        } catch {
+                            print("Error during logout: \(error)")
+                        }
                     }
                 }) {
                     HStack {

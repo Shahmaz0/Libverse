@@ -8,6 +8,10 @@ struct ContentView: View {
     var body: some View {
         if isAuthenticated {
             TabBarView()
+                .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UserDidLogout"))) { _ in
+                    // Update authentication state when user logs out
+                    isAuthenticated = false
+                }
         } else {
             LogInView()
                 .onAppear {

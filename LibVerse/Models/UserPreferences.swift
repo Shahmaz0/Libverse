@@ -32,7 +32,11 @@ class UserPreferences {
     // MARK: - Clear User Preferences
     
     func clearAllPreferences() {
+        // Clear genre preferences
         UserDefaults.standard.removeObject(forKey: genrePreferencesKey)
         UserDefaults.standard.removeObject(forKey: completedGenreOnboardingKey)
+        
+        // Clear any other user preferences
+        print("All user preferences cleared")
     }
 } 
