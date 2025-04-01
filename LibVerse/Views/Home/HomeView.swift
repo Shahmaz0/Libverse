@@ -4,6 +4,23 @@ import Supabase
 // MARK: - Color Extension
 
 
+// MARK: - NotificationBadge Component
+struct NotificationBadge: View {
+    let count: Int
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 18, height: 18)
+            
+            Text("\(min(count, 99))")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white)
+        }
+    }
+}
+
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
     @State private var recentBooks: [LibraryBook] = []
@@ -16,6 +33,7 @@ struct HomeView: View {
     @State private var recommendedError: String?
     @State private var genreError: String?
     @State private var selectedGenre: String?
+    @ObservedObject private var announcementManager = AnnouncementManager.shared
     
     // Updated genres based on the database
     let genres = ["Technology", "Business", "Reference", "Medicine", "Mathematics", "Science"]
@@ -139,10 +157,17 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     NavigationLink(destination: AnnouncementView()) {
-                        Image(systemName: "megaphone.fill")
-                            .symbolRenderingMode(.hierarchical)
-                            .font(.system(size: 20))
-                            .accessibilityLabel("Announcement")
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "megaphone.fill")
+                                .symbolRenderingMode(.hierarchical)
+                                .font(.system(size: 20))
+                                .accessibilityLabel("Announcement")
+                            
+                            if announcementManager.unreadCount > 0 {
+                                NotificationBadge(count: announcementManager.unreadCount)
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
                     }
                     
                     NavigationLink(destination: 
@@ -159,6 +184,16 @@ struct HomeView: View {
             .onAppear {
                 fetchRecentBooks()
                 fetchRecommendedBooks()
+                
+                // Make sure member data is loaded before fetching announcements
+                Task {
+                    if SupabaseManager.shared.currentMember == nil && SupabaseManager.shared.currentUser != nil {
+                        await SupabaseManager.shared.fetchCurrentMember()
+                    }
+                    
+                    // Fetch announcements after ensuring member data is loaded
+                    announcementManager.fetchAnnouncements()
+                }
             }
         }
     }

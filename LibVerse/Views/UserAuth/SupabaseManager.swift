@@ -149,6 +149,7 @@ class SupabaseManager: ObservableObject {
     @Published var client: SupabaseClient
     @Published var currentUser: User?
     @Published var currentSession: Session?
+    @Published var currentMember: Member?
     
 
     private let supabaseURL = URL(string: "https://iswzgemgctojcdnbxvjv.supabase.co")!
@@ -191,6 +192,9 @@ class SupabaseManager: ObservableObject {
             self.currentSession = session
         }
         
+        // Fetch member data after login
+        await fetchCurrentMember()
+        
         print("User ID: \(session.user.id)")
         return session
     }
@@ -198,6 +202,9 @@ class SupabaseManager: ObservableObject {
     func signOut() async throws {
         try await client.auth.signOut()
         currentUser = nil
+        currentMember = nil
+        // Post notification for user logout
+        NotificationCenter.default.post(name: NSNotification.Name("UserDidLogout"), object: nil)
     }
     
     func checkEmailExists(_ email: String) async throws -> Bool {
@@ -251,7 +258,8 @@ class SupabaseManager: ObservableObject {
             lastName: lastName,
             favourites: [],
             mybag: [],
-            shelves: ["Favorites": []]  // Initialize with default Favorites shelf
+            shelves: ["Favorites": []],  // Initialize with default Favorites shelf
+            created_at: Date()
         )
         
         do {
@@ -287,6 +295,9 @@ class SupabaseManager: ObservableObject {
                     self.currentUser = session.user
                     self.currentSession = session
                 }
+                
+                // Fetch member data after login
+                await fetchCurrentMember()
                 
                 return session
             } else {
@@ -358,7 +369,8 @@ class SupabaseManager: ObservableObject {
                     firstName: "",
                     lastName: "",
                     favourites: [],
-                    mybag: addToBag ? [bookId.uuidString] : []
+                    mybag: addToBag ? [bookId.uuidString] : [],
+                    shelves: ["Favorites": []]
                 )
                 
                 try await client
@@ -408,7 +420,10 @@ class SupabaseManager: ObservableObject {
                    email: currentUser?.email ?? "",
                    firstName: "",
                    lastName: "",
-                   favourites: isFavourite ? [bookId.uuidString] : []
+                   favourites: isFavourite ? [bookId.uuidString] : [],
+                   mybag: [],
+                   shelves: ["Favorites": []],
+                   created_at: Date()
                )
                
                try await client
@@ -495,7 +510,8 @@ class SupabaseManager: ObservableObject {
                    lastName: "",
                    favourites: [],
                    mybag: [],
-                   shelves: initialShelves
+                   shelves: initialShelves,
+                   created_at: Date()
                )
                
                let insertResult = try await client
@@ -601,7 +617,8 @@ class SupabaseManager: ObservableObject {
                    lastName: "",
                    favourites: [],
                    mybag: [],
-                   shelves: initialShelves
+                   shelves: initialShelves,
+                   created_at: Date()
                )
                
                let insertResult = try await client
@@ -686,6 +703,34 @@ class SupabaseManager: ObservableObject {
        } catch {
            print("Error removing book from shelf: \(error)")
            throw error
+       }
+   }
+   
+   // Fetch current member data
+   func fetchCurrentMember() async {
+       guard let userId = currentUser?.id else {
+           print("Cannot fetch member: User not logged in")
+           return
+       }
+       
+       do {
+           let response: [Member] = try await client
+               .from("Member")
+               .select()
+               .eq("id", value: userId)
+               .execute()
+               .value
+           
+           if let member = response.first {
+               DispatchQueue.main.async {
+                   self.currentMember = member
+                   print("Current member data loaded: \(member.firstName) \(member.lastName)")
+               }
+           } else {
+               print("No member record found for user ID: \(userId)")
+           }
+       } catch {
+           print("Error fetching member data: \(error)")
        }
    }
 }
