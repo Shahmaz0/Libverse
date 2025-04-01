@@ -159,10 +159,11 @@ struct HomeView: View {
     @State private var recommendedError: String?
     @State private var genreError: String?
     @State private var selectedGenre: String?
+    @State private var showGenreOnboarding = false
     @ObservedObject private var announcementManager = AnnouncementManager.shared
     
     // Updated genres based on the database
-    let genres = ["Technology", "Business", "Reference", "Medicine", "Mathematics", "Science"]
+    let genres = ["Technology", "Business", "Reference", "Medicine", "Mathematics", "Law", "Science"]
     
     let popularBooks: [PopularBook] = [
         PopularBook(imageName: "mvc", title: "MVC", author: "R.S. Salaria", rating: 4, isBookmarked: true),
@@ -278,6 +279,7 @@ struct HomeView: View {
                 }
             }
             .onAppear {
+                checkOnboardingStatus()
                 fetchRecentBooks()
                 fetchRecommendedBooks()
                 
@@ -290,6 +292,17 @@ struct HomeView: View {
                     // Fetch announcements after ensuring member data is loaded
                     announcementManager.fetchAnnouncements()
                 }
+            }
+            .sheet(isPresented: $showGenreOnboarding) {
+                GenreSelectionView(showOnboarding: $showGenreOnboarding)
+                    .onDisappear {
+                        // Refresh recommendations when sheet is dismissed
+                        fetchRecommendedBooks()
+                    }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("genrePreferencesUpdated"))) { _ in
+                // Refresh recommendations when genre preferences are updated
+                fetchRecommendedBooks()
             }
         }
     }
@@ -384,11 +397,21 @@ struct HomeView: View {
         Task {
             do {
                 print("Fetching recommended books from Supabase...")
-                // For now, we'll fetch books based on genre preferences
-                // In the future, this could be enhanced with more sophisticated recommendation logic
-                let response: [LibraryBook] = try await SupabaseManager.shared.client
+                
+                // Get user genre preferences
+                let userGenres = UserPreferences.shared.getGenrePreferences()
+                
+                // If user has genre preferences, filter by those genres
+                var query = SupabaseManager.shared.client
                     .from("Books")
                     .select("*")
+                
+                if !userGenres.isEmpty {
+                    // Filter by user's genre preferences
+                    query = query.in("genre", values: userGenres)
+                }
+                
+                let response: [LibraryBook] = try await query
                     .order("dateAdded", ascending: false)
                     .limit(10)
                     .execute()
@@ -447,6 +470,13 @@ struct HomeView: View {
                     self.selectedGenre = nil // Reset selection on error
                 }
             }
+        }
+    }
+    
+    // Check if user has completed genre onboarding
+    private func checkOnboardingStatus() {
+        if !UserPreferences.shared.hasCompletedGenreOnboarding() {
+            showGenreOnboarding = true
         }
     }
 }
