@@ -200,11 +200,35 @@ class SupabaseManager: ObservableObject {
     }
     
     func signOut() async throws {
-        try await client.auth.signOut()
-        currentUser = nil
-        currentMember = nil
-        // Post notification for user logout
-        NotificationCenter.default.post(name: NSNotification.Name("UserDidLogout"), object: nil)
+        do {
+            // Sign out from Supabase authentication
+            try await client.auth.signOut()
+            
+            // Clear user data
+            DispatchQueue.main.async {
+                self.currentUser = nil
+                self.currentSession = nil
+                self.currentMember = nil
+            }
+            
+            // Clear any stored credentials
+            UserDefaults.standard.removeObject(forKey: "pendingLoginEmail")
+            UserDefaults.standard.removeObject(forKey: "pendingLoginPassword")
+            UserDefaults.standard.removeObject(forKey: "pendingSignupEmail")
+            UserDefaults.standard.removeObject(forKey: "pendingSignupPassword")
+            UserDefaults.standard.removeObject(forKey: "pendingSignupFirstName")
+            UserDefaults.standard.removeObject(forKey: "pendingSignupLastName")
+            UserDefaults.standard.removeObject(forKey: "resetEmail")
+            UserDefaults.standard.removeObject(forKey: "resetOTP")
+            
+            // Post notification for user logout
+            NotificationCenter.default.post(name: NSNotification.Name("UserDidLogout"), object: nil)
+            
+            print("User signed out successfully")
+        } catch {
+            print("Error signing out: \(error.localizedDescription)")
+            throw error
+        }
     }
     
     func checkEmailExists(_ email: String) async throws -> Bool {
