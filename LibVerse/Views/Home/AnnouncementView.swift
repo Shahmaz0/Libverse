@@ -17,10 +17,20 @@ class AnnouncementManager: ObservableObject {
     private init() {
         // Set up NotificationCenter observer for app becoming active
         NotificationCenter.default.addObserver(self, selector: #selector(refreshAnnouncements), name: UIApplication.didBecomeActiveNotification, object: nil)
+        
+        // Clear viewed announcements when user logs out
+        NotificationCenter.default.addObserver(self, selector: #selector(clearViewedAnnouncements), name: NSNotification.Name("UserDidLogout"), object: nil)
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func clearViewedAnnouncements() {
+        // Clear all viewed announcements from UserDefaults
+        if let bundleId = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleId)
+        }
     }
     
     @objc func refreshAnnouncements() {
@@ -62,7 +72,7 @@ class AnnouncementManager: ObservableObject {
     }
     
     func calculateUnreadCount() {
-        let newCount = announcements.filter { $0.is_active && !$0.is_archived && $0.isNew }.count
+        let newCount = announcements.filter { $0.is_active && !$0.is_archived && !isAnnouncementViewed($0) }.count
         DispatchQueue.main.async {
             self.unreadCount = newCount
         }
@@ -70,11 +80,13 @@ class AnnouncementManager: ObservableObject {
     
     func markAnnouncementAsRead(_ announcement: Announcement) {
         if let index = announcements.firstIndex(where: { $0.id == announcement.id }) {
-            var updatedAnnouncement = announcement
-            updatedAnnouncement.markAsViewed()
-            announcements[index] = updatedAnnouncement
+            UserDefaults.standard.set(true, forKey: "announcement_viewed_\(announcement.id.uuidString)")
             calculateUnreadCount()
         }
+    }
+    
+    func isAnnouncementViewed(_ announcement: Announcement) -> Bool {
+        return UserDefaults.standard.bool(forKey: "announcement_viewed_\(announcement.id.uuidString)")
     }
 }
 
@@ -101,19 +113,12 @@ struct Announcement: Identifiable, Codable {
     }
     
     var isNew: Bool {
-        // Consider an announcement new if it was created in the last 3 days AND hasn't been viewed
-        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
-        let hasBeenViewed = UserDefaults.standard.bool(forKey: "announcement_viewed_\(id.uuidString)")
-        return created_at > threeDaysAgo && !hasBeenViewed
+        // Consider an announcement new if it hasn't been viewed
+        return !AnnouncementManager.shared.isAnnouncementViewed(self)
     }
     
     var fullContent: String {
         return content
-    }
-    
-    // Mark announcement as viewed
-    func markAsViewed() {
-        UserDefaults.standard.set(true, forKey: "announcement_viewed_\(id.uuidString)")
     }
 }
 
