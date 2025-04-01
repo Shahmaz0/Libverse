@@ -183,21 +183,46 @@ struct OTPVerificationView: View {
                     }
                 } else if UserDefaults.standard.string(forKey: "pendingLoginEmail") != nil {
                     // For login flow
-                    _ = try await SupabaseManager.shared.verifyLoginOTP(email: email, otp: otp)
-                    
-                    DispatchQueue.main.async {
-                        isLoading = false
-                        withAnimation {
-                            showSuccessMessage = true
-                        }
-                        // Post notification that user is logged in
-                        NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
+                    do {
+                        // Using try-catch instead of optional binding to avoid the error
+                        let maybeSession = try await SupabaseManager.shared.verifyLoginOTP(email: email, otp: otp)
                         
-                        // Check if user has completed genre onboarding
-                        if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
-                            // We'll show the genre onboarding after navigation
+                        if let session = maybeSession {
+                            // Session was successfully obtained, proceed with login
+                            // Note: The user and session data should already be set in the SupabaseManager
+                            
+                            // Fetch member data immediately to ensure it's available
+                            await SupabaseManager.shared.fetchCurrentMember()
+                            
+                            DispatchQueue.main.async {
+                                isLoading = false
+                                withAnimation {
+                                    showSuccessMessage = true
+                                }
+                                // Post notification that user is logged in
+                                NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
+                                
+                                // Check if user has completed genre onboarding
+                                if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
+                                    // We'll show the genre onboarding after navigation
+                                }
+                                navigateToHome = true
+                            }
+                        } else {
+                            DispatchQueue.main.async {
+                                isLoading = false
+                                errorMessage = "Failed to verify OTP"
+                                alertMessage = "Error: Failed to verify OTP"
+                                showAlert = true
+                            }
                         }
-                        navigateToHome = true
+                    } catch {
+                        DispatchQueue.main.async {
+                            isLoading = false
+                            errorMessage = error.localizedDescription
+                            alertMessage = "Error: \(error.localizedDescription)"
+                            showAlert = true
+                        }
                     }
                 } else {
                     // For signup flow

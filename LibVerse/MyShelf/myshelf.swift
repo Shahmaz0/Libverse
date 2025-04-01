@@ -310,10 +310,18 @@ struct myshelf: View {
                 loadUserShelves()
                 // To make sure we load cached images on app startup
                 _ = ImageCache.shared
+                
+                // Add observer for when member data is loaded (handles app restart scenarios)
+                NotificationCenter.default.addObserver(forName: NSNotification.Name("MemberDataLoaded"), object: nil, queue: .main) { _ in
+                    loadUserShelves()
+                }
             }
             .onDisappear {
                 // Save cached URLs when view disappears
                 ImageCache.shared.saveURLsToUserDefaults()
+                
+                // Remove notification observer
+                NotificationCenter.default.removeObserver(self, name: NSNotification.Name("MemberDataLoaded"), object: nil)
             }
             .navigationBarHidden(true)
         }

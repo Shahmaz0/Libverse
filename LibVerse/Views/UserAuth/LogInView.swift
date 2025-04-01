@@ -191,6 +191,9 @@ struct LogInView: View {
                     password: password
                 )
                 
+                // Store login credentials
+                UserDefaults.standard.set(collegeEmail, forKey: "userEmail")
+                
                 // If credentials are correct, proceed with OTP flow
                 try await SupabaseManager.shared.client.auth.signInWithOTP(email: collegeEmail)
                 

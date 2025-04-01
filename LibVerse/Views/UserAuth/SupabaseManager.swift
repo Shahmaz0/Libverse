@@ -300,21 +300,31 @@ class SupabaseManager: ObservableObject {
         }
     }
     
-    func verifyLoginOTP(email: String, otp: String) async throws -> Session {
-        let response = try await SupabaseManager.shared.client.auth.verifyOTP(
+    func verifyLoginOTP(email: String, otp: String) async throws -> Session? {
+        do {
+            // First verify the OTP
+            let otpResponse = try await client.auth.verifyOTP(
                 email: email,
                 token: otp,
                 type: .email
             )
             
-            // If OTP is verified, complete login with stored credentials
+            // If OTP verification was successful and we have stored credentials
             if let storedPassword = UserDefaults.standard.string(forKey: "pendingLoginPassword") {
-                let session = try await client.auth.signIn(email: email, password: storedPassword)
+                // Sign in with email and password
+                let authResponse = try await client.auth.signIn(
+                    email: email,
+                    password: storedPassword
+                )
+                
+                // Get the session from the response
+                let session = authResponse
                 
                 // Clear stored credentials
                 UserDefaults.standard.removeObject(forKey: "pendingLoginEmail")
                 UserDefaults.standard.removeObject(forKey: "pendingLoginPassword")
                 
+                // Update the current user and session
                 DispatchQueue.main.async {
                     self.currentUser = session.user
                     self.currentSession = session
@@ -325,12 +335,16 @@ class SupabaseManager: ObservableObject {
                 
                 return session
             } else {
+                // No stored credentials found
                 throw NSError(domain: "Login", code: -1, userInfo: [NSLocalizedDescriptionKey: "Login credentials not found"])
             }
+        } catch {
+            // Handle any errors that occurred
+            print("Error during OTP verification or login: \(error.localizedDescription)")
+            throw error
         }
+    }
     
-   
-
     func verifyPasswordReset(token: String, newPassword: String) async throws {
         // First verify the token
         let session = try await client.auth.verifyOTP(
@@ -732,12 +746,23 @@ class SupabaseManager: ObservableObject {
    
    // Fetch current member data
    func fetchCurrentMember() async {
-       guard let userId = currentUser?.id else {
-           print("Cannot fetch member: User not logged in")
-           return
-       }
-       
        do {
+           // First check if we have a current user, if not try to get from session
+           if currentUser == nil {
+               if let session = try? await client.auth.session {
+                   currentUser = session.user
+                   currentSession = session
+               } else {
+                   print("Cannot fetch member: No active session")
+                   return
+               }
+           }
+           
+           guard let userId = currentUser?.id else {
+               print("Cannot fetch member: User ID not available")
+               return
+           }
+           
            let response: [Member] = try await client
                .from("Member")
                .select()
@@ -749,6 +774,9 @@ class SupabaseManager: ObservableObject {
                DispatchQueue.main.async {
                    self.currentMember = member
                    print("Current member data loaded: \(member.firstName) \(member.lastName)")
+                   
+                   // Post notification that member data is loaded
+                   NotificationCenter.default.post(name: NSNotification.Name("MemberDataLoaded"), object: nil)
                }
            } else {
                print("No member record found for user ID: \(userId)")
