@@ -59,6 +59,7 @@ class AnnouncementManager: ObservableObject {
                         self.announcements = response
                     }
                     
+                    // Calculate unread count
                     self.calculateUnreadCount()
                     self.isLoading = false
                 }
@@ -79,11 +80,13 @@ class AnnouncementManager: ObservableObject {
         }
     }
     
-    func markAllAsRead() {
-        for announcement in announcements where announcement.isNew {
-            announcement.markAsViewed()
+    func markAnnouncementAsRead(_ announcement: Announcement) {
+        if let index = announcements.firstIndex(where: { $0.id == announcement.id }) {
+            var updatedAnnouncement = announcement
+            updatedAnnouncement.markAsViewed()
+            announcements[index] = updatedAnnouncement
+            calculateUnreadCount()
         }
-        unreadCount = 0
     }
 }
 
@@ -204,10 +207,8 @@ struct AnnouncementView: View {
             }
         }
         .onAppear {
+            // Fetch announcements when view appears
             announcementManager.fetchAnnouncements()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                announcementManager.markAllAsRead()
-            }
         }
     }
 }
@@ -344,10 +345,9 @@ struct AnnouncementDetailView: View {
             }
         }
         .onAppear {
-            if !hasMarkedAsViewed {
-                announcement.markAsViewed()
+            if !hasMarkedAsViewed && announcement.isNew {
                 hasMarkedAsViewed = true
-                announcementManager.calculateUnreadCount()
+                announcementManager.markAnnouncementAsRead(announcement)
             }
         }
     }
