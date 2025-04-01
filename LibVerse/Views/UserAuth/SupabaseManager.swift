@@ -202,6 +202,9 @@ class SupabaseManager: ObservableObject {
     func signOut() async throws {
         try await client.auth.signOut()
         currentUser = nil
+        currentMember = nil
+        // Post notification for user logout
+        NotificationCenter.default.post(name: NSNotification.Name("UserDidLogout"), object: nil)
     }
     
     func checkEmailExists(_ email: String) async throws -> Bool {
