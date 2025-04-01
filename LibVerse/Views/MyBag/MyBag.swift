@@ -35,24 +35,23 @@ struct HeaderView: View {
                         .font(.custom("Charter", size: 20))
                         .bold()
                         .foregroundColor(.black)
+                        .offset(x: isEditMode ? 25 : 0) // Move right in edit mode
                     
                     Spacer()
                     
                     if showEditButton {
                         Button(action: {
-                            // No animation here as requested
                             isEditMode.toggle()
-                            if !isEditMode {
-                                // Clear selection when exiting edit mode
-                            }
                         }) {
                             Text(isEditMode ? "Cancel" : "Edit")
                                 .font(.custom("Charter", size: 16))
                                 .foregroundColor(.black)
+                                .offset(x: isEditMode ? -20 : 0) // Move left in edit mode
                         }
                     }
                 }
                 .padding(.horizontal, 16)
+                .animation(.easeIn, value: isEditMode) // Ensure no animation
             )
     }
 }
@@ -103,7 +102,7 @@ struct MyBag: View {
                                 HStack(spacing: 0) {
                                     if isEditMode {
                                         Button(action: {
-                                            withAnimation(.easeInOut) {
+                                            withAnimation(.easeIn) {
                                                 if selectedBooks.contains(book.id) {
                                                     selectedBooks.remove(book.id)
                                                 } else {
