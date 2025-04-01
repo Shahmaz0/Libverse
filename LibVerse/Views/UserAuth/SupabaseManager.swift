@@ -19,9 +19,8 @@ struct Member: Codable {
     var myBag: [String]
     var shelves: [String: [String]]? // Dictionary mapping shelf names to arrays of book IDs
     let created_at: Date?
-    let userRole: String? // New field for user role - "member", "librarian", or "admin"
     
-    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], shelves: [String: [String]]? = ["Favorites": []], created_at: Date? = nil, userRole: String? = "member") {
+    init(id: UUID? = nil, email: String, password: String? = nil, firstName: String, lastName: String, favourites: [String] = [], mybag: [String] = [], shelves: [String: [String]]? = ["Favorites": []], created_at: Date? = nil) {
         self.id = id
         self.email = email
         self.password = password
@@ -31,11 +30,10 @@ struct Member: Codable {
         self.myBag = mybag
         self.shelves = shelves
         self.created_at = created_at
-        self.userRole = userRole
     }
     
     enum CodingKeys: String, CodingKey {
-        case id, email, password, firstName, lastName, favourites, myBag, shelves, created_at, userRole
+        case id, email, password, firstName, lastName, favourites, myBag, shelves, created_at
     }
     
     init(from decoder: Decoder) throws {
@@ -48,7 +46,6 @@ struct Member: Codable {
         favourites = try container.decode([String].self, forKey: .favourites)
         myBag = try container.decode([String].self, forKey: .myBag)
         created_at = try container.decodeIfPresent(Date.self, forKey: .created_at)
-        userRole = try container.decodeIfPresent(String.self, forKey: .userRole)
         
         // Special handling for shelves as JSONB
         if let shelvesObj = try? container.decodeIfPresent([String: [String]].self, forKey: .shelves) {
@@ -101,7 +98,6 @@ struct Member: Codable {
         try container.encode(favourites, forKey: .favourites)
         try container.encode(myBag, forKey: .myBag)
         try container.encodeIfPresent(created_at, forKey: .created_at)
-        try container.encodeIfPresent(userRole, forKey: .userRole)
         
         // Ensure shelves is encoded as a proper JSON object
         if let shelves = shelves {
@@ -251,7 +247,7 @@ class SupabaseManager: ObservableObject {
     }
     
     // Function to save member data to Supabase "Member" table
-    func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String, userRole: String = "member") async throws {
+    func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String) async throws {
         let member = Member(
             id: userId,
             email: email,
@@ -260,7 +256,7 @@ class SupabaseManager: ObservableObject {
             favourites: [],
             mybag: [],
             shelves: ["Favorites": []],  // Initialize with default Favorites shelf
-            userRole: userRole
+            created_at: Date()
         )
         
         do {
@@ -371,7 +367,7 @@ class SupabaseManager: ObservableObject {
                     lastName: "",
                     favourites: [],
                     mybag: addToBag ? [bookId.uuidString] : [],
-                    userRole: "member"
+                    shelves: ["Favorites": []]
                 )
                 
                 try await client
@@ -424,7 +420,7 @@ class SupabaseManager: ObservableObject {
                    favourites: isFavourite ? [bookId.uuidString] : [],
                    mybag: [],
                    shelves: ["Favorites": []],
-                   userRole: "member"
+                   created_at: Date()
                )
                
                try await client
@@ -512,7 +508,7 @@ class SupabaseManager: ObservableObject {
                    favourites: [],
                    mybag: [],
                    shelves: initialShelves,
-                   userRole: "member"
+                   created_at: Date()
                )
                
                let insertResult = try await client
@@ -619,7 +615,7 @@ class SupabaseManager: ObservableObject {
                    favourites: [],
                    mybag: [],
                    shelves: initialShelves,
-                   userRole: "member"
+                   created_at: Date()
                )
                
                let insertResult = try await client
@@ -707,11 +703,6 @@ class SupabaseManager: ObservableObject {
        }
    }
    
-   // Add a function to check if the current user is a librarian
-   func isLibrarian() -> Bool {
-       return currentMember?.userRole?.lowercased() == "librarian"
-   }
-   
    // Fetch current member data
    func fetchCurrentMember() async {
        guard let userId = currentUser?.id else {
@@ -730,7 +721,7 @@ class SupabaseManager: ObservableObject {
            if let member = response.first {
                DispatchQueue.main.async {
                    self.currentMember = member
-                   print("Current member data loaded: \(member.firstName) \(member.lastName), Role: \(member.userRole ?? "member")")
+                   print("Current member data loaded: \(member.firstName) \(member.lastName)")
                }
            } else {
                print("No member record found for user ID: \(userId)")

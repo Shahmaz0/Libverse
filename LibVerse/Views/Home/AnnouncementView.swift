@@ -13,12 +13,6 @@ class AnnouncementManager: ObservableObject {
     // Constants for announcement types
     private let typeAll = "All"
     private let typeMember = "Member"
-    private let typeLibrarian = "Librarian"
-    
-    // Check if current user is a librarian using SupabaseManager
-    private var isLibrarian: Bool {
-        return SupabaseManager.shared.isLibrarian()
-    }
     
     private init() {
         // Set up NotificationCenter observer for app becoming active
@@ -47,16 +41,10 @@ class AnnouncementManager: ObservableObject {
                     .value
                 
                 DispatchQueue.main.async {
-                    // Filter announcements based on user type
-                    if !self.isLibrarian {
-                        // For regular members, only show "All" and "Member" announcements
-                        self.announcements = response.filter { announcement in
-                            let type = announcement.type.lowercased()
-                            return type == self.typeAll.lowercased() || type == self.typeMember.lowercased()
-                        }
-                    } else {
-                        // For librarians, show all announcements
-                        self.announcements = response
+                    // Show all announcements that are either "All" or "Member" type
+                    self.announcements = response.filter { announcement in
+                        let type = announcement.type.lowercased()
+                        return type == self.typeAll.lowercased() || type == self.typeMember.lowercased()
                     }
                     
                     // Calculate unread count
