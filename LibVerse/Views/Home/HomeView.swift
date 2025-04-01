@@ -59,20 +59,22 @@ struct HomeView: View {
                         HStack(spacing: 15) {
                                 
                             //Rectangle 1 (Fiction & Literature)
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color(hex: "C89A69"))
-                                    .frame(width: 370, height: 200)
-                                    .overlay(
-                                        Rectangle()
-                                            .stroke(Color.black, lineWidth:2)
-                                    )
-                                
-                                Image("F&LCard")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 356, height: 198)
-                                    .clipped()
+                            NavigationLink(destination: FictionLiteratureView()) {
+                                ZStack {
+                                    Rectangle()
+                                        .fill(Color(hex: "C89A69"))
+                                        .frame(width: 370, height: 200)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(Color.black, lineWidth:2)
+                                        )
+                                    
+                                    Image("F&LCard")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 356, height: 198)
+                                        .clipped()
+                                }
                             }
                             
                             ZStack {
@@ -519,21 +521,30 @@ struct GenreButton: View {
     }
 }
 
-// MARK: - Other Views
 
-struct MyShelfView: View {
-    var body: some View {
-        Text("MyShelf View")
-    }
-}
-
-struct MyBookView: View {
-    var body: some View {
-        Text("MyBook View")
-    }
-}
 
 // MARK: - Preview
 #Preview {
     HomeView()
+}
+
+// MARK: - Book Extension for LibraryBook conversion
+extension Book {
+    init(from libraryBook: LibraryBook) {
+        self.init(
+            id: libraryBook.id,
+            title: libraryBook.title,
+            author: [libraryBook.author], // Convert single author to array
+            genre: libraryBook.genre ?? "Unknown",
+            publicationDate: libraryBook.publicationDate ?? "Unknown",
+            totalCopies: libraryBook.totalCopies ?? 0,
+            availableCopies: libraryBook.availableCopies ?? 0,
+            ISBN: libraryBook.ISBN ?? "",
+            Description: libraryBook.Description,
+            shelfLocation: libraryBook.shelfLocation,
+            dateAdded: libraryBook.dateAdded ?? "",
+            publisher: libraryBook.publisher,
+            imageLink: libraryBook.imageLink
+        )
+    }
 }
