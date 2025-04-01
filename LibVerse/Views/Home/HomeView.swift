@@ -74,8 +74,25 @@ struct HomeView: View {
                                     .clipped()
                             }
                             
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color(hex: "C89A69"))
+                                    .frame(width: 370, height: 200)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(Color.black, lineWidth: 2)
+                                    )
+                                
+                                Image("Non-fiction")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 356, height: 198)
+                                    .clipped()
+                            }
+                            
+                            
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 18)
                     }
 
                     sectionHeader(title: "Latest Arrivals")
