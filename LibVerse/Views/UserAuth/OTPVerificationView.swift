@@ -16,6 +16,8 @@ struct OTPVerificationView: View {
     @State private var timeRemaining = 60
     @State private var timer: Timer?
     @State private var isResendEnabled = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("isAuthenticated") private var isAuthenticated = false
     @Environment(\.dismiss) private var dismiss
         
     var otp: String {
@@ -140,8 +142,12 @@ struct OTPVerificationView: View {
                 Text(alertMessage)
             }
             .navigationDestination(isPresented: $navigateToHome) {
-                TabBarView()
-                    .navigationBarBackButtonHidden(true)
+                if !hasCompletedOnboarding {
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                } else {
+                    TabBarView()
+                        .navigationBarBackButtonHidden(true)
+                }
             }
             .onAppear {
                 fieldFocus = 0
@@ -173,6 +179,7 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
+                                isAuthenticated = true
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription
@@ -190,6 +197,7 @@ struct OTPVerificationView: View {
                         withAnimation {
                             showSuccessMessage = true
                         }
+                        isAuthenticated = true
                         navigateToHome = true
                     }
                 } else {
@@ -202,6 +210,7 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
+                                isAuthenticated = true
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription

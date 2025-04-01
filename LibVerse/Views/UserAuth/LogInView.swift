@@ -5,7 +5,8 @@ struct LogInView: View {
     @State private var collegeEmail: String = ""
     @State private var password: String = ""
     @State private var showForgotPasswordFlow = false
-    @State private var isLoggedIn: Bool = false
+    @AppStorage("isAuthenticated") private var isAuthenticated: Bool = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
     @State private var showOTPView = false
@@ -96,12 +97,15 @@ struct LogInView: View {
                 }
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-            .navigationDestination(isPresented: $isLoggedIn) {
-                TabBarView()
-                    .navigationBarHidden(true)
+            .navigationDestination(isPresented: $isAuthenticated) {
+                if !hasCompletedOnboarding {
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
+                } else {
+                    TabBarView()
+                }
             }
             .navigationDestination(isPresented: $showOTPView) {
-                OTPVerificationView(email: collegeEmail , password: password)
+                OTPVerificationView(email: collegeEmail, password: password)
             }
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
