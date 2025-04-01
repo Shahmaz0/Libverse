@@ -190,6 +190,13 @@ struct OTPVerificationView: View {
                         withAnimation {
                             showSuccessMessage = true
                         }
+                        // Post notification that user is logged in
+                        NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
+                        
+                        // Check if user has completed genre onboarding
+                        if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
+                            // We'll show the genre onboarding after navigation
+                        }
                         navigateToHome = true
                     }
                 } else {
@@ -202,6 +209,8 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
+                                // Post notification that user is logged in
+                                NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription

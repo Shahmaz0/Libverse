@@ -5,6 +5,7 @@ struct UserProfileView: View {
     let profile: UserProfile = .mockProfile
     @State private var selectedTab = 0
     @State private var showEditProfile = false
+    @State private var showGenrePreferences = false
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     @Environment(\.presentationMode) var presentationMode
@@ -48,9 +49,19 @@ struct UserProfileView: View {
             VStack {
                 Button(action: {
                     Task {
-                        try? await SupabaseManager.shared.signOut()
-                        showMainApp = false
-                        showUserInitialView = true
+                        do {
+                            // Clear user preferences before signing out
+                            UserPreferences.shared.clearAllPreferences()
+                            
+                            // Sign out from Supabase
+                            try await SupabaseManager.shared.signOut()
+                            
+                            // Update UI state
+                            showMainApp = false
+                            showUserInitialView = true
+                        } catch {
+                            print("Error during logout: \(error)")
+                        }
                     }
                 }) {
                     HStack {
@@ -162,6 +173,30 @@ struct UserProfileView: View {
         VStack(spacing: 20) {
             DetailRow(title: "Email", value: profile.email)
             DetailRow(title: "Enrollment Number", value: profile.enrollmentNumber)
+            
+            // Genre Preferences Button
+            Button(action: {
+                showGenrePreferences = true
+            }) {
+                HStack {
+                    Text("Genre Preferences")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+                }
+                .padding(.vertical, 5)
+            }
+            .sheet(isPresented: $showGenrePreferences) {
+                GenreSelectionView(showOnboarding: $showGenrePreferences)
+                    .onDisappear {
+                        // Post notification to refresh recommendations
+                        NotificationCenter.default.post(name: Notification.Name("genrePreferencesUpdated"), object: nil)
+                    }
+            }
         }
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
