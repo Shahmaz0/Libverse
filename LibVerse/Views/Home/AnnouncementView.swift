@@ -1,45 +1,6 @@
 import SwiftUI
 import Supabase
 
-// MARK: - Announcement Model
-struct Announcement: Identifiable, Codable {
-    let id: UUID
-    let title: String
-    let content: String
-    let type: String
-    let expiry_date: Date?
-    let created_at: Date
-    let is_active: Bool
-    let is_archived: Bool
-    let last_modified: Date?
-    let start_date: Date?
-    
-    // Computed properties to maintain compatibility with existing UI
-    var description: String {
-        return content
-    }
-    
-    var date: Date {
-        return created_at
-    }
-    
-    var isNew: Bool {
-        // Consider an announcement new if it was created in the last 3 days AND hasn't been viewed
-        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
-        let hasBeenViewed = UserDefaults.standard.bool(forKey: "announcement_viewed_\(id.uuidString)")
-        return created_at > threeDaysAgo && !hasBeenViewed
-    }
-    
-    var fullContent: String {
-        return content
-    }
-    
-    // Mark announcement as viewed
-    func markAsViewed() {
-        UserDefaults.standard.set(true, forKey: "announcement_viewed_\(id.uuidString)")
-    }
-}
-
 // MARK: - AnnouncementView
 struct AnnouncementView: View {
     @Environment(\.presentationMode) var presentationMode
@@ -241,11 +202,11 @@ struct AnnouncementDetailView: View {
                 
                 // Metadata row
                 HStack {
-                    Label("Type: \(announcement.type)", systemImage: "tag")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
+//                    Label("Type: \(announcement.type)", systemImage: "tag")
+//                        .font(.caption)
+//                        .foregroundColor(.secondary)
+//                    
+//                    Spacer()
                     
                     if let expiryDate = announcement.expiry_date {
                         Label("Expires: \(shortDateFormatter.string(from: expiryDate))", systemImage: "calendar")

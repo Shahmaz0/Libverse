@@ -1,134 +1,8 @@
 import SwiftUI
 import Supabase
 
-// MARK: - Model for Books
-struct LibraryBook: Identifiable, Codable {
-    let id: UUID
-    let title: String
-    private let authorArray: [String]?  // To handle author coming as array
-    let genre: String?
-    let publicationDate: String?
-    let totalCopies: Int?
-    let availableCopies: Int?
-    let ISBN: String?
-    let Description: String?
-    let shelfLocation: String?
-    let dateAdded: String?
-    let publisher: String?
-    let imageLink: String?
-    
-    // Computed property to get author string
-    var author: String {
-        return authorArray?.first ?? "Unknown Author"
-    }
-    
-    enum CodingKeys: String, CodingKey {
-        case id, title, genre
-        case authorArray = "author"  // Map the author array from JSON to authorArray
-        case publicationDate = "publicationDate"
-        case totalCopies = "totalCopies"
-        case availableCopies = "availableCopies"
-        case ISBN = "ISBN"
-        case Description = "Description"
-        case shelfLocation = "shelfLocation"
-        case dateAdded = "dateAdded"
-        case publisher, imageLink
-    }
-    
-    // Custom initializer to handle potential type mismatches
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // Decode required fields
-        id = try container.decode(UUID.self, forKey: .id)
-        title = try container.decode(String.self, forKey: .title)
-        
-        // Handle author which could be array or string
-        if let authorArr = try? container.decode([String].self, forKey: .authorArray) {
-            authorArray = authorArr
-        } else if let authorStr = try? container.decode(String.self, forKey: .authorArray) {
-            authorArray = [authorStr]
-        } else {
-            authorArray = nil
-        }
-        
-        // Decode optional fields
-        genre = try? container.decode(String.self, forKey: .genre)
-        publicationDate = try? container.decode(String.self, forKey: .publicationDate)
-        totalCopies = try? container.decode(Int.self, forKey: .totalCopies)
-        availableCopies = try? container.decode(Int.self, forKey: .availableCopies)
-        ISBN = try? container.decode(String.self, forKey: .ISBN)
-        Description = try? container.decode(String.self, forKey: .Description)
-        shelfLocation = try? container.decode(String.self, forKey: .shelfLocation)
-        dateAdded = try? container.decode(String.self, forKey: .dateAdded)
-        publisher = try? container.decode(String.self, forKey: .publisher)
-        imageLink = try? container.decode(String.self, forKey: .imageLink)
-    }
-}
+// MARK: - Color Extension
 
-// MARK: - Model for Popular Books
-struct PopularBook: Identifiable {
-    let id = UUID()
-    let imageName: String
-    let title: String
-    let author: String
-    let rating: Int
-    let isBookmarked: Bool
-}
-
-// MARK: - Main ContentView with TabView
-struct TabBarView: View {
-    @State private var selectedTab = 0
-    var body: some View {
-        TabView(selection: $selectedTab) {
-            HomeView()
-                .tabItem {
-                    Image(systemName: "house.fill")
-                    Text("Home")
-                }
-                .tag(0)
-            
-            SearchView()
-                .tabItem {
-                    Image(systemName: "magnifyingglass")
-                    Text("Search")
-                }
-                .tag(1)
-            
-            myshelf()
-                .tabItem {
-                    Image(systemName: "books.vertical.fill")
-                    Text("MyShelf")
-                }
-                .tag(2)
-            
-            MyBag()
-                .tabItem {
-                    Image(systemName: "bag.fill")
-                    Text("MyBag")
-                }
-                .tag(3)
-            
-//            UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
-//                .tabItem {
-//                    Image(systemName: "person.crop.circle")
-//                    Text("Profile")
-//                }
-//                .tag(4)
-        }
-        .tint(Color(red:255/255, green: 111/255, blue: 45/255))
-        .onAppear {
-            // Set the tab bar background color
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(red: 255/255, green: 239/255, blue: 210/255, alpha: 1.0)
-            
-            // Use this appearance for both normal and scrolling states
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
-        }
-    }
-}
 
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
@@ -156,6 +30,36 @@ struct HomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // More to Explore Section
+                    Text("More to Explore")
+                        .font(.title2)
+                        .bold()
+                        .padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 15) {
+                                
+                            //Rectangle 1 (Fiction & Literature)
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color(hex: "C89A69"))
+                                    .frame(width: 370, height: 200)
+                                    .overlay(
+                                        Rectangle()
+                                            .stroke(Color.black, lineWidth:2)
+                                    )
+                                
+                                Image("F&LCard")
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 356, height: 198)
+                                    .clipped()
+                            }
+                            
+                        }
+                        .padding(.horizontal)
+                    }
+
                     sectionHeader(title: "Latest Arrivals")
                     
                     if isLoadingRecent {
