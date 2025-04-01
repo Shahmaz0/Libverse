@@ -296,11 +296,11 @@ struct AnnouncementDetailView: View {
                 
                 // Metadata row
                 HStack {
-                    Label("Type: \(announcement.type)", systemImage: "tag")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
+//                    Label("Type: \(announcement.type)", systemImage: "tag")
+//                        .font(.caption)
+//                        .foregroundColor(.secondary)
+//                    
+//                    Spacer()
                     
                     if let expiryDate = announcement.expiry_date {
                         Label("Expires: \(shortDateFormatter.string(from: expiryDate))", systemImage: "calendar")
