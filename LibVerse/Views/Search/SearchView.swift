@@ -14,10 +14,10 @@ struct SearchView: View {
     @State private var selectedBook: Book? = nil
     
     let categories = [
-        ("Technology", "chart.bar.fill"),
-        ("Business", "building.2.fill"),
-        ("Mathematics", "dollarsign.circle.fill"),
-        ("Law", "book.fill"),
+        ("Technology", "Technology"),
+        ("Business", "Business"),
+        ("Mathematics", "Mathematic"),
+        ("Law", "Law"),
     ]
     
     private func normalizeText(_ text: String) -> String {
@@ -162,27 +162,40 @@ struct SearchView: View {
                                 }
                             }
                         } else {
-                            // Show categories
-                            VStack(spacing: 0) {
-                                ForEach(categories, id: \.0) { category, icon in
-                                    NavigationLink(destination: CategoryBooksView(category: category, books: dataController.books)) {
-                                        VStack(spacing: 0) {
-                                            HStack {
-                                                Image(systemName: icon)
-                                                    .foregroundColor(.black)
-                                                    .frame(width: 24, height: 24)
-                                                Text(category)
-                                                    .font(.custom("sfprodisplaymedium", size: 15))
-                                                Spacer()
+                            // Show categories as grid
+                            VStack(spacing: 20) {
+                                ForEach(0..<2) { row in
+                                    HStack(spacing: 16) {
+                                        ForEach(0..<2) { col in
+                                            let index = row * 2 + col
+                                            if index < categories.count {
+                                                let (category, icon) = categories[index]
+                                                NavigationLink(destination: CategoryBooksView(category: category, books: dataController.books)) {
+                                                    ZStack {
+                                                        Image(icon)
+                                                            .resizable()
+                                                            .scaledToFill()
+                                                            .frame(width: 172, height: 70)
+                                                            .clipped()
+                                                            .overlay(
+                                                                RoundedRectangle(cornerRadius: 0)
+                                                                    .stroke(Color.black, lineWidth: 1)
+                                                            )
+                                                        
+//                                                        Text(category)
+//                                                            .font(.custom("sfprodisplaymedium", size: 15))
+//                                                            .foregroundColor(.white)
+//                                                            .padding(6)
+//                                                            .background(Color.black.opacity(0.5))
+                                                    }
+                                                }
+                                                .buttonStyle(PlainButtonStyle())
                                             }
-                                            .padding(.vertical, 16)
-                                            .padding(.horizontal)
                                         }
-                                        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
                                     }
-                                    .buttonStyle(PlainButtonStyle())
                                 }
                             }
+                            .padding(20)
                         }
                     }
                     .background(Color(red: 255/255, green: 239/255, blue: 210/255))
