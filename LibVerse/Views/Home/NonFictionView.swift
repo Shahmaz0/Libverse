@@ -14,6 +14,7 @@ struct NonFictionView: View {
     @State private var books: [LibraryBook] = []
     @State private var isLoading = true
     @State private var error: String?
+    @Environment(\.presentationMode) var presentationMode
     
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -71,6 +72,17 @@ struct NonFictionView: View {
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
         .navigationTitle("Non-Fiction")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                }
+            }
+        }
         .onAppear {
             fetchBooks()
         }
