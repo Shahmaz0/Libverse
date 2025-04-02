@@ -195,7 +195,8 @@ struct SignUpView: View {
                     email: collegeEmail,
                     password: password, 
                     firstName: firstName, 
-                    lastName: lastName
+                    lastName: lastName,
+                    enrollmentNumber: enrollmentNumber
                 )
                 
                 DispatchQueue.main.async {

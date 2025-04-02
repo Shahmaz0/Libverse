@@ -1,13 +1,22 @@
 import SwiftUI
+import Combine
 
 struct UserProfileView: View {
-    // Using mock data for now
-    let profile: UserProfile = .mockProfile
+    @StateObject private var supabaseManager = SupabaseManager.shared
     @State private var selectedTab = 0
     @State private var showEditProfile = false
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     @Environment(\.presentationMode) var presentationMode
+    
+    // Book data states
+    @State private var currentlyBorrowedBooks: [Book] = []
+    @State private var borrowingHistoryBooks: [Book] = []
+    @State private var isLoading = false
+    
+    var profile: Member? {
+        supabaseManager.currentMember
+    }
     
     init(showMainApp: Binding<Bool>, showUserInitialView: Binding<Bool>) {
         _showMainApp = showMainApp
@@ -29,45 +38,31 @@ struct UserProfileView: View {
                     // Fines Card
                     finesCard
                     
+                    // Account Details (always visible)
+                    accountDetails
+                    
                     // Tab Picker
                     tabPicker
                     
                     // Content based on selected tab
-                    if selectedTab == 0 {
-                        borrowedBooksList
+                    if isLoading {
+                        ProgressView()
+                            .padding(.vertical, 50)
                     } else {
-                        accountDetails
+                        if selectedTab == 0 {
+                            currentlyBorrowedBooksList
+                        } else {
+                            borrowingHistoryList
+                        }
                     }
                 }
                 .padding(.vertical)
-                .padding(.bottom, 80) // Add padding for the logout button
+                .padding(.bottom, 80)
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             
             // Fixed Logout Button at bottom
-            VStack {
-                Button(action: {
-                    Task {
-                        try? await SupabaseManager.shared.signOut()
-                        showMainApp = false
-                        showUserInitialView = true
-                    }
-                }) {
-                    HStack {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                        Text("Logout")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                    .foregroundColor(.white)
-                    .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.black, lineWidth: 1.25))
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 20)
-            }
-            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+            logoutButton
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .navigationTitle("Profile")
@@ -75,30 +70,79 @@ struct UserProfileView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 17, weight: .semibold))
-                        Text("Back")
-                            .fontWeight(.regular)
-                    }
-                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
-                }
+                backButton
             }
         }
         .sheet(isPresented: $showEditProfile) {
-            EditProfileView(profile: profile)
+            EditProfileView(profile: profile ?? Member(id: UUID(), email: "", firstName: "", lastName: "", enrollmentNumber: nil, fines: 0.0, borrowedBooks: []))
+        }
+        .task {
+            await loadBooks()
         }
     }
     
+    // MARK: - Data Loading
+    
+    private func loadBooks() async {
+        guard let userId = supabaseManager.currentUser?.id else { return }
+        
+        isLoading = true
+        
+        do {
+            // Fetch currently borrowed books (issued or overdue)
+            let activeIssues: [BookIssue] = try await supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .in("status", value: ["Issued", "Overdue"])
+                .execute()
+                .value
+            
+            print("Active Issuew", activeIssues)
+            // Fetch borrowing history (returned books)
+            let returnedIssues: [BookIssue] = try await supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .eq("status", value: "Returned")
+                .execute()
+                .value
+            
+            print("Returned Issues", returnedIssues)
+            
+            // Get book details
+            currentlyBorrowedBooks = try await fetchBooks(for: activeIssues)
+            borrowingHistoryBooks = try await fetchBooks(for: returnedIssues)
+            
+            print("Currently Borrowed Books", currentlyBorrowedBooks)
+            print("Borrowing history Books", borrowingHistoryBooks)
+            
+        } catch {
+            print("Error loading books: \(error)")
+        }
+        isLoading = false
+    }
+    
+    private func fetchBooks(for issues: [BookIssue]) async throws -> [Book] {
+        guard !issues.isEmpty else { return [] }
+        
+        let bookIds = issues.map { $0.bookId }
+        
+        let books: [Book] = try await supabaseManager.client
+            .from("Books")
+            .select()
+            .in("id", value: bookIds)
+            .execute()
+            .value
+        
+        return books
+    }
+    
+    // MARK: - Subviews
+    
     private var profileHeader: some View {
-        Button(action: {
-            showEditProfile = true
-        }) {
+        Button(action: { showEditProfile = true }) {
             HStack(spacing: 15) {
-                // Profile Image
                 Image(systemName: "person.circle.fill")
                     .resizable()
                     .scaledToFit()
@@ -106,13 +150,12 @@ struct UserProfileView: View {
                     .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                     .clipShape(Circle())
                 
-                // User Info
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("\(profile.firstName) \(profile.lastName)")
+                    Text("\(profile?.firstName ?? "") \(profile?.lastName ?? "")")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                     
-                    Text(profile.email)
+                    Text(profile?.email ?? "")
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.secondary)
                 }
@@ -136,10 +179,10 @@ struct UserProfileView: View {
             
             Spacer()
             
-            Text("₹\(String(format: "%.2f", profile.fines))")
+            Text("₹\(String(format: "%.2f", profile?.fines ?? 0.0))")
                 .font(.title2)
                 .bold()
-                .foregroundColor(profile.fines > 0 ? .black : .black)
+                .foregroundColor((profile?.fines ?? 0) > 0 ? .red : .black)
         }
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -149,19 +192,52 @@ struct UserProfileView: View {
         .padding(.horizontal)
     }
     
-    private var borrowedBooksList: some View {
-        VStack(spacing: 15) {
-            ForEach(profile.borrowedBooks) { book in
-                BorrowedBookCard(book: book)
+    private var currentlyBorrowedBooksList: some View {
+        Group {
+            if currentlyBorrowedBooks.isEmpty {
+                Text("No books currently borrowed")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                ForEach(currentlyBorrowedBooks) { book in
+                    BookCard(
+                        BookImage: book.imageLink ?? "",
+                        title: book.title,
+                        author: book.author.joined(separator: ", "),
+                        description: book.Description ?? "No description available",
+                        showPlusButton: false
+                    )
+                    .padding(.horizontal)
+                }
             }
         }
-        .padding(.horizontal)
+    }
+    
+    private var borrowingHistoryList: some View {
+        Group {
+            if borrowingHistoryBooks.isEmpty {
+                Text("No borrowing history found")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                ForEach(borrowingHistoryBooks) { book in
+                    BookCard(
+                        BookImage: book.imageLink ?? "",
+                        title: book.title,
+                        author: book.author.joined(separator: ", "),
+                        description: book.Description ?? "No description available",
+                        showPlusButton: false
+                    )
+                    .padding(.horizontal)
+                }
+            }
+        }
     }
     
     private var accountDetails: some View {
         VStack(spacing: 20) {
-            DetailRow(title: "Email", value: profile.email)
-            DetailRow(title: "Enrollment Number", value: profile.enrollmentNumber)
+            DetailRow(title: "Email", value: profile?.email ?? "N/A")
+            DetailRow(title: "Enrollment Number", value: profile?.enrollmentNumber ?? "N/A")
         }
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -173,50 +249,51 @@ struct UserProfileView: View {
     
     private var tabPicker: some View {
         Picker("View", selection: $selectedTab) {
-            Label("Borrowed Books", systemImage: "book.fill").tag(0)
-            Label("Account Details", systemImage: "person.fill").tag(1)
+            Text("Currently Borrowed").tag(0)
+            Text("Borrowing History").tag(1)
         }
         .pickerStyle(.segmented)
         .padding(.horizontal)
     }
-}
-
-struct BorrowedBookCard: View {
-    let book: BorrowedBook
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                VStack {
-                    HStack {
-                        Text(book.title)
-                            .font(.headline)
-                            .padding(.leading, 0)
-                        
-                        Spacer()
-                        HStack {
-                            Image(systemName: book.isOverdue ? "exclamationmark.triangle.fill" : "clock.fill")
-                                .foregroundColor(book.isOverdue ? .red : .black)
-                            
-                            Text(book.isOverdue ? "Overdue by \(abs(book.daysRemaining)) days" : "Due in \(book.daysRemaining) days")
-                                .font(.subheadline)
-                                .foregroundColor(book.isOverdue ? .red : .black)
-                        }
-                    }
-                    
-                    Text(book.author)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .padding(.leading, -165)
+    private var logoutButton: some View {
+        VStack {
+            Button(action: {
+                Task {
+                    try? await SupabaseManager.shared.signOut()
+                    showMainApp = false
+                    showUserInitialView = true
                 }
+            }) {
+                HStack {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                    Text("Logout")
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                .foregroundColor(.white)
+                .overlay(RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.black, lineWidth: 1.25))
             }
+            .padding(.horizontal)
+            .padding(.vertical, 20)
         }
-        .padding()
-        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .cornerRadius(0)
-        .overlay(RoundedRectangle(cornerRadius: 0)
-            .stroke(Color.black, lineWidth: 1.25))
+    }
+    
+    private var backButton: some View {
+        Button(action: {
+            presentationMode.wrappedValue.dismiss()
+        }) {
+            HStack(spacing: 2) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 17, weight: .semibold))
+                Text("Back")
+                    .fontWeight(.regular)
+            }
+            .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+        }
     }
 }
 
@@ -239,7 +316,7 @@ struct DetailRow: View {
 }
 
 struct EditProfileView: View {
-    let profile: UserProfile
+    let profile: Member
     @Environment(\.dismiss) private var dismiss
     @State private var firstName: String
     @State private var lastName: String
@@ -247,18 +324,17 @@ struct EditProfileView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
 
-    init(profile: UserProfile) {
+    init(profile: Member) {
         self.profile = profile
         _firstName = State(initialValue: profile.firstName)
         _lastName = State(initialValue: profile.lastName)
-        _enrollmentNumber = State(initialValue: profile.enrollmentNumber)
+        _enrollmentNumber = State(initialValue: profile.enrollmentNumber ?? "")
     }
 
     var body: some View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Profile Image with Edit Icon
                     ZStack(alignment: .bottomTrailing) {
                         Image(systemName: "person.circle.fill")
                             .resizable()
@@ -268,9 +344,7 @@ struct EditProfileView: View {
                             .clipShape(Circle())
                             .padding(.top)
 
-                        Button(action: {
-                            // Action to edit profile image
-                        }) {
+                        Button(action: {}) {
                             Image(systemName: "pencil")
                                 .foregroundColor(.white)
                                 .padding(10)
@@ -280,7 +354,6 @@ struct EditProfileView: View {
                         .offset(x: 8, y: 8)
                     }
 
-                    // Edit Form
                     VStack(spacing: 15) {
                         EditField(title: "First Name", text: $firstName)
                         EditField(title: "Last Name", text: $lastName)
@@ -291,7 +364,6 @@ struct EditProfileView: View {
                     .cornerRadius(0)
                     .padding(.horizontal)
 
-                    // Save Button
                     Button(action: saveChanges) {
                         Text("Save Changes")
                             .frame(maxWidth: .infinity)
@@ -328,36 +400,53 @@ struct EditProfileView: View {
             .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .edgesIgnoringSafeArea(.all)
     }
 
     private func saveChanges() {
-        alertMessage = "Profile updated successfully!"
-        showAlert = true
-    }
-
-    struct EditField: View {
-        let title: String
-        @Binding var text: String
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title)
-                    .font(.custom("Courier", size: 16))
-                    .foregroundColor(.secondary)
-
-                TextField("", text: $text)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .padding()
-                    .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-                    .overlay(RoundedRectangle(cornerRadius: 0)
-                        .stroke(Color.black, lineWidth: 1.25))
-                    .font(.custom("Courier", size: 16))
+        guard let userId = profile.id else { return }
+        
+        Task {
+            do {
+                try await SupabaseManager.shared.updateProfile(
+                    userId: userId,
+                    firstName: firstName,
+                    lastName: lastName,
+                    enrollmentNumber: enrollmentNumber.isEmpty ? nil : enrollmentNumber
+                )
+                
+                alertMessage = "Profile updated successfully!"
+                showAlert = true
+            } catch {
+                alertMessage = "Failed to update profile: \(error.localizedDescription)"
+                showAlert = true
             }
         }
     }
 }
 
-#Preview {
-    UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
+struct EditField: View {
+    let title: String
+    @Binding var text: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.custom("Courier", size: 16))
+                .foregroundColor(.secondary)
+
+            TextField("", text: $text)
+                .textFieldStyle(PlainTextFieldStyle())
+                .padding()
+                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+                .overlay(RoundedRectangle(cornerRadius: 0)
+                    .stroke(Color.black, lineWidth: 1.25))
+                .font(.custom("Courier", size: 16))
+        }
+    }
+}
+
+struct UserProfileView_Previews: PreviewProvider {
+    static var previews: some View {
+        UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
+    }
 }
