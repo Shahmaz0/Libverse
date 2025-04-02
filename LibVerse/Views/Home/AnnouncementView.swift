@@ -1,6 +1,95 @@
 import SwiftUI
 import Supabase
 
+// MARK: - Announcement Manager
+class AnnouncementManager: ObservableObject {
+    static let shared = AnnouncementManager()
+    
+    @Published var unreadCount: Int = 0
+    @Published var announcements: [Announcement] = []
+    @Published var isLoading: Bool = false
+    @Published var error: String?
+    
+    // Constants for announcement types
+    private let typeAll = "All"
+    private let typeMember = "Member"
+    
+    private init() {
+        // Set up NotificationCenter observer for app becoming active
+        NotificationCenter.default.addObserver(self, selector: #selector(refreshAnnouncements), name: UIApplication.didBecomeActiveNotification, object: nil)
+        
+        // Clear viewed announcements when user logs out
+        NotificationCenter.default.addObserver(self, selector: #selector(clearViewedAnnouncements), name: NSNotification.Name("UserDidLogout"), object: nil)
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    @objc func clearViewedAnnouncements() {
+        // Clear all viewed announcements from UserDefaults
+        if let bundleId = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleId)
+        }
+    }
+    
+    @objc func refreshAnnouncements() {
+        fetchAnnouncements()
+    }
+    
+    func fetchAnnouncements() {
+        isLoading = true
+        error = nil
+        
+        Task {
+            do {
+                let response: [Announcement] = try await SupabaseManager.shared.client
+                    .from("announcements")
+                    .select()
+                    .order("created_at", ascending: false)
+                    .execute()
+                    .value
+                
+                DispatchQueue.main.async {
+                    // Show all announcements that are either "All" or "Member" type
+                    self.announcements = response.filter { announcement in
+                        let type = announcement.type.lowercased()
+                        return type == self.typeAll.lowercased() || type == self.typeMember.lowercased()
+                    }
+                    
+                    // Calculate unread count
+                    self.calculateUnreadCount()
+                    self.isLoading = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.error = error.localizedDescription
+                    self.isLoading = false
+                    print("Error fetching announcements: \(error)")
+                }
+            }
+        }
+    }
+    
+    func calculateUnreadCount() {
+        let newCount = announcements.filter { $0.is_active && !$0.is_archived && !isAnnouncementViewed($0) }.count
+        DispatchQueue.main.async {
+            self.unreadCount = newCount
+        }
+    }
+    
+    func markAnnouncementAsRead(_ announcement: Announcement) {
+        if let index = announcements.firstIndex(where: { $0.id == announcement.id }) {
+            UserDefaults.standard.set(true, forKey: "announcement_viewed_\(announcement.id.uuidString)")
+            calculateUnreadCount()
+        }
+    }
+    
+    func isAnnouncementViewed(_ announcement: Announcement) -> Bool {
+        return UserDefaults.standard.bool(forKey: "announcement_viewed_\(announcement.id.uuidString)")
+    }
+}
+
 // MARK: - Announcement Model
 struct Announcement: Identifiable, Codable {
     let id: UUID
@@ -24,38 +113,29 @@ struct Announcement: Identifiable, Codable {
     }
     
     var isNew: Bool {
-        // Consider an announcement new if it was created in the last 3 days AND hasn't been viewed
-        let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date()) ?? Date()
-        let hasBeenViewed = UserDefaults.standard.bool(forKey: "announcement_viewed_\(id.uuidString)")
-        return created_at > threeDaysAgo && !hasBeenViewed
+        // Consider an announcement new if it hasn't been viewed
+        return !AnnouncementManager.shared.isAnnouncementViewed(self)
     }
     
     var fullContent: String {
         return content
-    }
-    
-    // Mark announcement as viewed
-    func markAsViewed() {
-        UserDefaults.standard.set(true, forKey: "announcement_viewed_\(id.uuidString)")
     }
 }
 
 // MARK: - AnnouncementView
 struct AnnouncementView: View {
     @Environment(\.presentationMode) var presentationMode
-    @State private var announcements: [Announcement] = []
-    @State private var isLoading = true
-    @State private var errorMessage: String?
+    @ObservedObject private var announcementManager = AnnouncementManager.shared
     
     var body: some View {
         ZStack {
             Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all)
             
-            if isLoading {
+            if announcementManager.isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
                     .tint(Color(red: 255/255, green: 111/255, blue: 45/255))
-            } else if let error = errorMessage {
+            } else if let error = announcementManager.error {
                 VStack {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 50))
@@ -72,7 +152,7 @@ struct AnnouncementView: View {
                         .padding()
                     
                     Button("Try Again") {
-                        fetchAnnouncements()
+                        announcementManager.fetchAnnouncements()
                     }
                     .padding()
                     .background(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -80,7 +160,7 @@ struct AnnouncementView: View {
                     .cornerRadius(8)
                 }
                 .padding()
-            } else if announcements.isEmpty {
+            } else if announcementManager.announcements.isEmpty {
                 VStack {
                     Image(systemName: "megaphone")
                         .font(.system(size: 50))
@@ -92,7 +172,7 @@ struct AnnouncementView: View {
                 }
             } else {
                 List {
-                    ForEach(announcements.filter { $0.is_active && !$0.is_archived }) { announcement in
+                    ForEach(announcementManager.announcements.filter { $0.is_active && !$0.is_archived }) { announcement in
                         NavigationLink(destination: AnnouncementDetailView(announcement: announcement)) {
                             AnnouncementRow(announcement: announcement)
                         }
@@ -120,34 +200,8 @@ struct AnnouncementView: View {
             }
         }
         .onAppear {
-            fetchAnnouncements()
-        }
-    }
-    
-    private func fetchAnnouncements() {
-        isLoading = true
-        errorMessage = nil
-        
-        Task {
-            do {
-                let response: [Announcement] = try await SupabaseManager.shared.client
-                    .from("announcements")
-                    .select()
-                    .order("created_at", ascending: false)
-                    .execute()
-                    .value
-                
-                DispatchQueue.main.async {
-                    self.announcements = response
-                    self.isLoading = false
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = error.localizedDescription
-                    self.isLoading = false
-                    print("Error fetching announcements: \(error)")
-                }
-            }
+            // Fetch announcements when view appears
+            announcementManager.fetchAnnouncements()
         }
     }
 }
@@ -203,6 +257,7 @@ struct AnnouncementDetailView: View {
     @Environment(\.presentationMode) var presentationMode
     let announcement: Announcement
     @State private var hasMarkedAsViewed = false
+    @ObservedObject private var announcementManager = AnnouncementManager.shared
     
     var body: some View {
         ScrollView {
@@ -241,11 +296,11 @@ struct AnnouncementDetailView: View {
                 
                 // Metadata row
                 HStack {
-                    Label("Type: \(announcement.type)", systemImage: "tag")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
+//                    Label("Type: \(announcement.type)", systemImage: "tag")
+//                        .font(.caption)
+//                        .foregroundColor(.secondary)
+//                    
+//                    Spacer()
                     
                     if let expiryDate = announcement.expiry_date {
                         Label("Expires: \(shortDateFormatter.string(from: expiryDate))", systemImage: "calendar")
@@ -283,9 +338,9 @@ struct AnnouncementDetailView: View {
             }
         }
         .onAppear {
-            if !hasMarkedAsViewed {
-                announcement.markAsViewed()
+            if !hasMarkedAsViewed && announcement.isNew {
                 hasMarkedAsViewed = true
+                announcementManager.markAnnouncementAsRead(announcement)
             }
         }
     }

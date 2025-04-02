@@ -8,25 +8,25 @@
     }
 
     struct BookIssue: Codable, Identifiable {
-        let id: UUID
-        let bookId: UUID
-        let memberId: UUID
-        let issueStatus: IssueStatus
-        let issueDate: Date
-        let returnDate: Date
-        let actualReturnDate: Date?
-        let overdueDays: Int?
-        
-        enum CodingKeys: String, CodingKey {
-            case id
-            case bookId
-            case memberId
-            case issueStatus = "status"
-            case issueDate
-            case returnDate
-            case actualReturnDate
-            case overdueDays
-        }
+       let id: UUID
+       let bookId: UUID
+       let memberId: UUID
+       let issueStatus: IssueStatus
+       let issueDate: Date
+       let returnDate: Date
+       let actualReturnDate: Date?
+       let overdueDays: Int?
+       
+       enum CodingKeys: String, CodingKey {
+           case id
+           case bookId
+           case memberId
+           case issueStatus = "status"
+           case issueDate
+           case returnDate
+           case actualReturnDate
+           case overdueDays
+       }
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)

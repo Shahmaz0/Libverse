@@ -16,6 +16,8 @@ struct SignUpView: View {
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
     @State private var navigateToOTP: Bool = false
+    @State private var hasSignUpError: Bool = false
+    @State private var errorMessage: String = ""
 
     private func isPasswordValid(_ password: String) -> Bool {
         let hasCapitalLetter = password.contains { $0.isUppercase }
@@ -178,24 +180,31 @@ struct SignUpView: View {
     
     private func signUp() {
         isLoading = true
+        hasSignUpError = false
+        errorMessage = ""
+        
         Task {
             do {
-                let emailExists = try await SupabaseManager.shared.checkEmailExists(collegeEmail)
-                            
-                if emailExists {
+                // First verify the email and password format is valid
+                guard !password.isEmpty, password.count >= 6 else {
                     DispatchQueue.main.async {
                         isLoading = false
-                        alertMessage = "This email is already registered. Please use a different email or sign in."
-                        showAlert = true
+                        errorMessage = "Password must be at least 6 characters."
+                        hasSignUpError = true
                     }
                     return
                 }
                 
-                let authResponse = try await supabaseManager.signUp(
+                // Set the isNewSignUp flag before proceeding with signup
+                UserDefaults.standard.set(true, forKey: "isNewSignUp")
+                
+                // Use SupabaseManager.signUp instead of directly calling auth.signUp
+                let authResponse = try await SupabaseManager.shared.signUp(
                     email: collegeEmail,
-                    password: password, 
-                    firstName: firstName, 
-                    lastName: lastName
+                    password: password,
+                    firstName: firstName,
+                    lastName: lastName,
+                    enrollmentNumber: enrollmentNumber
                 )
                 
                 DispatchQueue.main.async {
@@ -203,15 +212,15 @@ struct SignUpView: View {
                     if authResponse.user != nil {
                         navigateToOTP = true
                     } else {
-                        alertMessage = "An error occurred during signup."
-                        showAlert = true
+                        errorMessage = "An error occurred during signup."
+                        hasSignUpError = true
                     }
                 }
             } catch {
                 DispatchQueue.main.async {
                     isLoading = false
-                    alertMessage = "Error signing up: \(error.localizedDescription)"
-                    showAlert = true
+                    errorMessage = "Error signing up: \(error.localizedDescription)"
+                    hasSignUpError = true
                 }
             }
         }
