@@ -198,10 +198,13 @@ struct SignUpView: View {
                 // Set the isNewSignUp flag before proceeding with signup
                 UserDefaults.standard.set(true, forKey: "isNewSignUp")
                 
-                // First try to sign up with email and password
-                let authResponse = try await SupabaseManager.shared.client.auth.signUp(
+                // Use SupabaseManager.signUp instead of directly calling auth.signUp
+                let authResponse = try await SupabaseManager.shared.signUp(
                     email: collegeEmail,
-                    password: password
+                    password: password,
+                    firstName: firstName,
+                    lastName: lastName,
+                    enrollmentNumber: enrollmentNumber
                 )
                 
                 DispatchQueue.main.async {

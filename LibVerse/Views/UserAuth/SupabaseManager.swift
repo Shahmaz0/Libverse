@@ -325,22 +325,26 @@ class SupabaseManager: ObservableObject {
     
     func saveMemberData(userId: UUID, email: String, firstName: String, lastName: String, enrollmentNumber: String?) async throws {
         print("🔄 Saving member data for: \(email)")
-        let member = Member(
-            id: userId,
-            email: email,
-            firstName: firstName,
-            lastName: lastName,
-            favourites: [],
-            myBag: [],
-            shelves: ["Favorites": []],
-            created_at: Date(),
-            enrollmentNumber: enrollmentNumber
-        )
+        
+        // Create a dictionary with only the fields shown in the database schema
+        let memberData: [String: AnyCodable] = [
+            "id": AnyCodable(userId.uuidString),
+            "firstName": AnyCodable(firstName),
+            "email": AnyCodable(email),
+            "created_at": AnyCodable(ISO8601DateFormatter().string(from: Date())),
+            "favourites": AnyCodable([]),
+            "lastName": AnyCodable(lastName),
+            "password": AnyCodable(NSNull()),
+            "enrollmentNumber": enrollmentNumber != nil ? AnyCodable(enrollmentNumber!) : AnyCodable(NSNull()),
+            "myBag": AnyCodable([]),
+            "shelves": AnyCodable(["Favorites": []]),
+            "fine": AnyCodable(0.0)
+        ]
         
         do {
             let result = try await client
                 .from("Member")
-                .insert(member)
+                .insert(memberData)
                 .execute()
             
             print("✅ Member data saved successfully for user: \(userId)")
