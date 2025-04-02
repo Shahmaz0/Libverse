@@ -16,8 +16,6 @@ struct SignUpView: View {
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
     @State private var navigateToOTP: Bool = false
-    @State private var hasSignUpError: Bool = false
-    @State private var errorMessage: String = ""
 
     private func isPasswordValid(_ password: String) -> Bool {
         let hasCapitalLetter = password.contains { $0.isUppercase }
@@ -199,9 +197,12 @@ struct SignUpView: View {
                 UserDefaults.standard.set(true, forKey: "isNewSignUp")
                 
                 // First try to sign up with email and password
-                let authResponse = try await SupabaseManager.shared.client.auth.signUp(
+                let authResponse = try await SupabaseManager.signup(
                     email: collegeEmail,
-                    password: password
+                    password: password, 
+                    firstName: firstName, 
+                    lastName: lastName,
+                    enrollmentNumber: enrollmentNumber
                 )
                 
                 DispatchQueue.main.async {
