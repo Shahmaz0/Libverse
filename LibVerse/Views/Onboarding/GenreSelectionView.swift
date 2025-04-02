@@ -3,6 +3,9 @@ import SwiftUI
 struct GenreSelectionView: View {
     @State private var selectedGenres: Set<String> = []
     @Binding var showOnboarding: Bool
+    @State private var isLoading = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     
     // Genres from the HomeView
     let genres = ["Technology", "Business", "Reference", "Medicine", "Mathematics", "Law", "Science"]
@@ -44,29 +47,88 @@ struct GenreSelectionView: View {
             
             Spacer()
             
-            // Continue Button
-            Button(action: savePreferencesAndContinue) {
-                Text("Continue")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(selectedGenres.isEmpty ? Color.gray : Color(red: 255/255, green: 111/255, blue: 45/255))
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal, 20)
+            // Buttons
+            VStack(spacing: 15) {
+                Button(action: savePreferencesAndContinue) {
+                    if isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    } else {
+                        Text("Continue")
+                    }
+                    
+                    Spacer()
+                        .frame(width: 0)
+                    
+                    if !isLoading {
+                        Image(systemName: "arrow.right")
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(selectedGenres.isEmpty ? Color.gray : Color(red: 255/255, green: 111/255, blue: 45/255))
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .padding(.horizontal, 20)
+                .disabled(selectedGenres.isEmpty || isLoading)
+                
+                Button(action: skipAndContinue) {
+                    Text("Skip for now")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 16, weight: .medium))
+                }
+                .disabled(isLoading)
             }
-            .disabled(selectedGenres.isEmpty)
             .padding(.bottom, 30)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
     }
     
     private func savePreferencesAndContinue() {
-        // Save selected genres using the UserPreferences class
-        UserPreferences.shared.saveGenrePreferences(Array(selectedGenres))
-        
-        // Dismiss onboarding
+        guard !selectedGenres.isEmpty else { return }
+        saveGenres(Array(selectedGenres))
+    }
+    
+    private func skipAndContinue() {
+        // Just dismiss onboarding without saving preferences
         showOnboarding = false
+    }
+    
+    private func saveGenres(_ genres: [String]) {
+        guard let userId = SupabaseManager.shared.currentUser?.id else {
+            showAlert = true
+            alertMessage = "You need to be logged in to save preferences"
+            return
+        }
+        
+        isLoading = true
+        
+        Task {
+            do {
+                // Save to Supabase
+                try await SupabaseManager.shared.updateSelectedGenres(userId: userId, genres: genres)
+                
+                // Also save locally
+                UserPreferences.shared.saveGenrePreferences(genres)
+                
+                // Post notification that preferences were updated to refresh recommendations
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: Notification.Name("genrePreferencesUpdated"), object: nil)
+                    isLoading = false
+                    showOnboarding = false
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    isLoading = false
+                    showAlert = true
+                    alertMessage = "Failed to save preferences: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 

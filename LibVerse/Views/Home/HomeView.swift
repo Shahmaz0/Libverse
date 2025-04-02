@@ -366,32 +366,59 @@ struct HomeView: View {
         
         Task {
             do {
-                print("Fetching recommended books from Supabase...")
+                print("Fetching recommended books based on user preferences...")
                 
-                // Get user genre preferences
-                let userGenres = UserPreferences.shared.getGenrePreferences()
-                
-                // If user has genre preferences, filter by those genres
-                var query = SupabaseManager.shared.client
-                    .from("Books")
-                    .select("*")
-                
-                if !userGenres.isEmpty {
-                    // Filter by user's genre preferences
-                    query = query.in("genre", values: userGenres)
-                }
-                
-                let response: [LibraryBook] = try await query
-                    .order("dateAdded", ascending: false)
-                    .limit(10)
-                    .execute()
-                    .value
-                
-                print("Received recommended books from Supabase: \(response)")
-                
-                DispatchQueue.main.async {
-                    self.recommendedBooks = response
-                    self.isLoadingRecommended = false
+                // Use the new method in SupabaseManager to get recommendations
+                if let user = SupabaseManager.shared.currentUser {
+                    // Fetch recommendations using the user's selected genres from Supabase
+                    let books = try await SupabaseManager.shared.fetchRecommendedBooks()
+                    
+                    // Get LibraryBook objects directly from Supabase instead
+                    // because we can't convert Book to LibraryBook directly
+                    let bookIds = books.map { $0.id.uuidString }
+                    
+                    if !bookIds.isEmpty {
+                        // Fetch the LibraryBook objects for the recommended book IDs
+                        let response: [LibraryBook] = try await SupabaseManager.shared.client
+                            .from("Books")
+                            .select()
+                            .in("id", values: bookIds)
+                            .execute()
+                            .value
+                        
+                        DispatchQueue.main.async {
+                            self.recommendedBooks = response
+                            self.isLoadingRecommended = false
+                        }
+                    } else {
+                        // No recommendations, load random books
+                        let response: [LibraryBook] = try await SupabaseManager.shared.client
+                            .from("Books")
+                            .select()
+                            .order("dateAdded", ascending: false)
+                            .limit(10)
+                            .execute()
+                            .value
+                        
+                        DispatchQueue.main.async {
+                            self.recommendedBooks = response
+                            self.isLoadingRecommended = false
+                        }
+                    }
+                } else {
+                    // Fallback for users who are not logged in
+                    let response: [LibraryBook] = try await SupabaseManager.shared.client
+                        .from("Books")
+                        .select()
+                        .order("dateAdded", ascending: false)
+                        .limit(10)
+                        .execute()
+                        .value
+                    
+                    DispatchQueue.main.async {
+                        self.recommendedBooks = response
+                        self.isLoadingRecommended = false
+                    }
                 }
             } catch {
                 print("Error fetching recommended books: \(error)")
@@ -648,27 +675,6 @@ struct ShimmeringEffect: ViewModifier {
 // MARK: - Preview
 #Preview {
     HomeView()
-}
-
-// MARK: - Book Extension for LibraryBook conversion
-extension Book {
-    init(from libraryBook: LibraryBook) {
-        self.init(
-            id: libraryBook.id,
-            title: libraryBook.title,
-            author: [libraryBook.author], // Convert single author to array
-            genre: libraryBook.genre ?? "Unknown",
-            publicationDate: libraryBook.publicationDate ?? "Unknown",
-            totalCopies: libraryBook.totalCopies ?? 0,
-            availableCopies: libraryBook.availableCopies ?? 0,
-            ISBN: libraryBook.ISBN ?? "",
-            Description: libraryBook.Description,
-            shelfLocation: libraryBook.shelfLocation,
-            dateAdded: libraryBook.dateAdded ?? "",
-            publisher: libraryBook.publisher,
-            imageLink: libraryBook.imageLink
-        )
-    }
 }
 
 // MARK: - AllBooksView
