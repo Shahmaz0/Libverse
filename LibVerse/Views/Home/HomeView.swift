@@ -32,7 +32,7 @@ struct HomeView: View {
     @State private var recentError: String?
     @State private var recommendedError: String?
     @State private var genreError: String?
-    @State private var selectedGenre: String?
+    @State private var selectedGenre: String? = "Technology"
     @State private var showGenreOnboarding = false
     @ObservedObject private var announcementManager = AnnouncementManager.shared
     
@@ -220,6 +220,11 @@ struct HomeView: View {
                 checkOnboardingStatus()
                 fetchRecentBooks()
                 fetchRecommendedBooks()
+                
+                // Fetch books for the default genre
+                if let defaultGenre = selectedGenre {
+                    fetchBooksByGenre(defaultGenre)
+                }
                 
                 // Make sure member data is loaded before fetching announcements
                 Task {
@@ -489,6 +494,7 @@ struct RecentBookCard: View {
                     .lineLimit(2)
                     .frame(width: 160, alignment: .leading)
                     .multilineTextAlignment(.leading)
+                    .foregroundColor(.black)
                 
                 Text(book.author)
                     .font(.custom("Charter", size: 13))
