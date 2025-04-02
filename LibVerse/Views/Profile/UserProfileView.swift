@@ -38,6 +38,9 @@ struct UserProfileView: View {
                     // Fines Card
                     finesCard
                     
+                    //Policy Card
+                    policyCard
+                    
                     // Account Details (always visible)
                     accountDetails
                     
@@ -190,6 +193,30 @@ struct UserProfileView: View {
         .overlay(RoundedRectangle(cornerRadius: 0)
             .stroke(Color.black, lineWidth: 1.25))
         .padding(.horizontal)
+    }
+    
+    private var policyCard: some View {
+        NavigationLink(destination: LibraryPoliciesView()) {
+            HStack {
+                Image(systemName: "doc.text.fill")
+                    .font(.title2)
+                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+                
+                Text("Library Policies")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.gray)
+            }
+            .padding()
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+            .cornerRadius(0)
+            .overlay(RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.black, lineWidth: 1.25))
+        }
     }
     
     private var currentlyBorrowedBooksList: some View {
