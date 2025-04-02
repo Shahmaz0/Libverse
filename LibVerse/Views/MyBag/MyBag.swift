@@ -373,10 +373,13 @@ struct MultipleBooksQRView: View {
     let memberId: String
     let issueId: UUID
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var supabaseManager: SupabaseManager
     
     @State private var timeRemaining: TimeInterval = 300 // 5 minutes in seconds
     @State private var qrImage: UIImage?
     @State private var isExpired = false
+    @State private var checkIssueTimer: Timer?
+    @State private var refreshTrigger: Bool = false
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     var body: some View {
@@ -467,14 +470,22 @@ struct MultipleBooksQRView: View {
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .onAppear {
-            qrImage = generateQRCode()
+            Task {
+                qrImage = await generateQRCode()
+            }
+            startCheckingIssueStatus()
+        }
+        .onDisappear {
+            stopCheckingIssueStatus()
         }
         .onReceive(timer) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
                 if timeRemaining == 0 {
                     isExpired = true
-                    qrImage = generateQRCode()
+                    Task {
+                        qrImage = await generateQRCode()
+                    }
                 }
             }
         }
@@ -486,37 +497,164 @@ struct MultipleBooksQRView: View {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    private func generateQRCode() -> UIImage {
+    private func generateQRCode() async -> UIImage {
         let expirationDate = Date().addingTimeInterval(5 * 60)
+        let issueDate = Date()
         
-        // Create a dictionary with all book IDs
-        let qrData: [String: Any] = [
-            "issueId": issueId.uuidString,
-            "bookIds": books.map { $0.id.uuidString },
-            "memberId": memberId,
-            "expirationDate": expirationDate.timeIntervalSince1970,
-            "timestamp": Date().timeIntervalSince1970,
-            "isValid": !isExpired
-        ]
-        
-        // Convert to JSON data
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: qrData),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return UIImage(systemName: "xmark.circle") ?? UIImage()
+        // Fetch return period from library_policies
+        do {
+            let policiesQuery = supabaseManager.client
+                .from("library_policies")
+                .select()
+                .limit(1)
+            
+            let policies: [LibraryPolicy] = try await policiesQuery.execute().value
+            let returnPeriod = policies.first?.returnPeriod ?? 14 // Default to 14 days if not found
+            
+            let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate
+            
+            // Create the QR data structure
+            let qrData: [String: Any] = [
+                "bookIssue": [
+                    "bookIds": books.map { $0.id.uuidString },
+                    "memberId": memberId,
+                    "id": issueId.uuidString,
+                    "issueDate": ISO8601DateFormatter().string(from: issueDate),
+                    "status": "Pending",
+                    "returnDate": ISO8601DateFormatter().string(from: returnDate)
+                ],
+                "expirationDate": expirationDate.timeIntervalSince1970,
+                "timestamp": Date().timeIntervalSince1970,
+                "isValid": !isExpired
+            ]
+            
+            // Convert to JSON data
+            guard let jsonData = try? JSONSerialization.data(withJSONObject: qrData),
+                  let jsonString = String(data: jsonData, encoding: .utf8) else {
+                print("Failed to create JSON string")
+                return UIImage(systemName: "xmark.circle") ?? UIImage()
+            }
+            
+            print("Generated QR data: \(jsonString)")
+            
+            let data = Data(jsonString.utf8)
+            let context = CIContext()
+            let filter = CIFilter.qrCodeGenerator()
+            
+            filter.setValue(data, forKey: "inputMessage")
+            filter.setValue("H", forKey: "inputCorrectionLevel") // Using high error correction for logo overlay
+            
+            if let outputImage = filter.outputImage {
+                // Scale up the QR code to desired size
+                let transform = CGAffineTransform(scaleX: 10, y: 10)
+                let scaledQRImage = outputImage.transformed(by: transform)
+                
+                if let qrCGImage = context.createCGImage(scaledQRImage, from: scaledQRImage.extent) {
+                    let size = CGSize(width: qrCGImage.width, height: qrCGImage.height)
+                    UIGraphicsBeginImageContextWithOptions(size, false, 0)
+                    
+                    let qrUIImage = UIImage(cgImage: qrCGImage)
+                    qrUIImage.draw(in: CGRect(origin: .zero, size: size))
+                    
+                    // Add logo in center
+                    if let logoImage = UIImage(named: "QRlogo") {
+                        let logoSize = CGSize(width: size.width * 0.25, height: size.height * 0.25)
+                        let logoX = (size.width - logoSize.width) / 2
+                        let logoY = (size.height - logoSize.height) / 2
+                        let logoRect = CGRect(x: logoX, y: logoY, width: logoSize.width, height: logoSize.height)
+                        
+                        // Create circular mask for logo
+                        UIGraphicsBeginImageContextWithOptions(logoSize, false, 1.0)
+                        let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: logoSize))
+                        circlePath.addClip()
+                        
+                        // Draw logo with white background
+                        UIColor.white.setFill()
+                        UIBezierPath(rect: CGRect(origin: .zero, size: logoSize)).fill()
+                        logoImage.draw(in: CGRect(origin: .zero, size: logoSize))
+                        
+                        let circularLogo = UIGraphicsGetImageFromCurrentImageContext()
+                        UIGraphicsEndImageContext()
+                        
+                        // Draw circular logo on QR code
+                        circularLogo?.draw(in: logoRect)
+                    }
+                    
+                    let finalImage = UIGraphicsGetImageFromCurrentImageContext()
+                    UIGraphicsEndImageContext()
+                    
+                    print("Successfully generated QR code")
+                    return finalImage ?? UIImage(systemName: "xmark.circle") ?? UIImage()
+                }
+            }
+        } catch {
+            print("Error fetching library policies: \(error)")
         }
         
-        let data = Data(jsonString.utf8)
-        let context = CIContext()
-        let filter = CIFilter.qrCodeGenerator()
-        
-        filter.setValue(data, forKey: "inputMessage")
-        
-        if let outputImage = filter.outputImage,
-           let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
-            return UIImage(cgImage: cgImage)
-        }
-        
+        print("Failed to generate QR code image")
         return UIImage(systemName: "xmark.circle") ?? UIImage()
+    }
+    
+    private func startCheckingIssueStatus() {
+        // Check every 2 seconds for issue status
+        checkIssueTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+            Task {
+                await checkIssueStatus()
+            }
+        }
+    }
+    
+    private func stopCheckingIssueStatus() {
+        checkIssueTimer?.invalidate()
+        checkIssueTimer = nil
+    }
+    
+    private func checkIssueStatus() async {
+        guard let userId = supabaseManager.currentUser?.id else { return }
+        
+        do {
+            let issueQuery = supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("id", value: issueId)
+                .eq("memberId", value: userId)
+                .in("bookId", values: books.map { $0.id })
+                .eq("status", value: "Issued")
+            
+            let issueResponse: [BookIssue] = try await issueQuery.execute().value
+            
+            // Check if all books in the issue have been processed
+            if issueResponse.count == books.count {
+                // All books have been issued, close the QR view
+                await MainActor.run {
+                    presentationMode.wrappedValue.dismiss()
+                }
+                stopCheckingIssueStatus()
+            }
+        } catch {
+            print("Error checking issue status: \(error)")
+        }
+    }
+}
+
+// Add LibraryPolicy struct
+struct LibraryPolicy: Codable {
+    let id: UUID
+    let borrowingLimit: Int
+    let returnPeriod: Int
+    let fineAmount: Int
+    let lostBookFine: Int
+    let lastUpdated: Date?
+    let createdAt: Date?
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case borrowingLimit = "borrowing_limit"
+        case returnPeriod = "return_period"
+        case fineAmount = "fine_amount"
+        case lostBookFine = "lost_book_fine"
+        case lastUpdated = "last_updated"
+        case createdAt = "created_at"
     }
 }
 
