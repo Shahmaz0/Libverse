@@ -37,6 +37,7 @@ struct BookDetailView: View {
     @State private var showingReturnQRCode = false
     @State private var showingAddToShelf = false
     @State private var isInAnyShelf: Bool = false
+    @State private var isDisabled: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
     
     var body: some View {
@@ -189,6 +190,8 @@ struct BookDetailView: View {
                             .cornerRadius(0)
                             .border(.black)
                     }
+                    .disabled(isDisabled && !isBookIssued)
+                    .opacity(isDisabled && !isBookIssued ? 0.5 : 1)
                     .sheet(isPresented: $showingQRCode) {
                         if let userId = supabaseManager.currentUser?.id {
                             QRCodeGeneratorView(book: book, memberId: userId.uuidString)
@@ -204,6 +207,14 @@ struct BookDetailView: View {
                         if let issueId = currentIssueId {
                             ReturnQRCodeView(issueId: issueId)
                         }
+                    }
+                    
+                    if isDisabled && !isBookIssued {
+                        Text("Your account is currently disabled. Please contact the library admin.")
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.red)
+                            .padding(.horizontal)
+                            .padding(.top, 5)
                     }
                     
                     HStack(spacing: 0) {
@@ -500,6 +511,27 @@ struct BookDetailView: View {
                             if let member = response.first {
                                 isFavorite = member.favourites.contains(book.id.uuidString)
                                 isInBag = member.myBag.contains(book.id.uuidString)
+                                
+                                // Check if member is disabled
+                                let memberDisabledQuery = supabaseManager.client
+                                    .from("Member")
+                                    .select("is_disabled")
+                                    .eq("id", value: userId)
+                                
+                                let memberDisabledResponse = try await memberDisabledQuery.execute()
+                                do {
+                                    if memberDisabledResponse.data != nil {
+                                        let jsonObject = try JSONSerialization.jsonObject(with: memberDisabledResponse.data) as? [[String: Any]]
+                                        if let firstMember = jsonObject?.first,
+                                           let isDisabledValue = firstMember["is_disabled"] as? Bool {
+                                            await MainActor.run {
+                                                isDisabled = isDisabledValue
+                                            }
+                                        }
+                                    }
+                                } catch {
+                                    print("Error parsing is_disabled flag: \(error)")
+                                }
                             }
                             
                             // Check if book is issued to current user
