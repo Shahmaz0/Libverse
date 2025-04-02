@@ -197,10 +197,11 @@ struct HomeView: View {
                                 .symbolRenderingMode(.hierarchical)
                                 .font(.system(size: 20))
                                 .accessibilityLabel("Announcement")
+                                .padding(.top, 4)
                             
                             if announcementManager.unreadCount > 0 {
                                 NotificationBadge(count: announcementManager.unreadCount)
-                                    .offset(x: 8, y: -8)
+                                    .offset(x: 8, y: -4)
                             }
                         }
                     }

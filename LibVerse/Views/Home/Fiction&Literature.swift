@@ -15,6 +15,7 @@ struct FictionLiteratureView: View {
     @State private var isLoading = true
     @State private var error: String?
     @State private var selectedGenre = 0 // 0 for Fiction, 1 for Literature
+    @Environment(\.presentationMode) var presentationMode
     
     let columns = [
         GridItem(.flexible(), spacing: 16),
@@ -83,6 +84,17 @@ struct FictionLiteratureView: View {
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
         .navigationTitle(selectedGenre == 0 ? "Fiction" : "Literature")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: {
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.black)
+                }
+            }
+        }
         .onAppear {
             fetchBooks()
         }
