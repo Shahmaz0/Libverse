@@ -439,8 +439,11 @@ struct HomeView: View {
     
     // Check if user has completed genre onboarding
     private func checkOnboardingStatus() {
-        if !UserPreferences.shared.hasCompletedGenreOnboarding() {
+        // Only show onboarding for new sign-ups
+        if !UserPreferences.shared.hasCompletedGenreOnboarding() && UserDefaults.standard.bool(forKey: "isNewSignUp") {
             showGenreOnboarding = true
+            // Reset the flag after showing onboarding
+            UserDefaults.standard.set(false, forKey: "isNewSignUp")
         }
     }
 }
