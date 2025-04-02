@@ -59,36 +59,41 @@ struct HomeView: View {
                         HStack(spacing: 15) {
                                 
                             //Rectangle 1 (Fiction & Literature)
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color(hex: "C89A69"))
-                                    .frame(width: 370, height: 200)
-                                    .overlay(
-                                        Rectangle()
-                                            .stroke(Color.black, lineWidth:2)
-                                    )
-                                
-                                Image("F&LCard")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 356, height: 198)
-                                    .clipped()
+                            NavigationLink(destination: FictionLiteratureView()) {
+                                ZStack {
+                                    Rectangle()
+                                        .fill(Color(hex: "C89A69"))
+                                        .frame(width: 370, height: 200)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(Color.black, lineWidth:2)
+                                        )
+                                    
+                                    Image("F&LCard")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 356, height: 198)
+                                        .clipped()
+                                }
                             }
                             
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color(hex: "C89A69"))
-                                    .frame(width: 370, height: 200)
-                                    .overlay(
-                                        Rectangle()
-                                            .stroke(Color.black, lineWidth: 2)
-                                    )
-                                
-                                Image("Non-fiction")
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 356, height: 198)
-                                    .clipped()
+                            //Rectangle 2 (Non-Fiction)
+                            NavigationLink(destination: NonFictionView()) {
+                                ZStack {
+                                    Rectangle()
+                                        .fill(Color(hex: "C89A69"))
+                                        .frame(width: 370, height: 200)
+                                        .overlay(
+                                            Rectangle()
+                                                .stroke(Color.black, lineWidth: 2)
+                                        )
+                                    
+                                    Image("Non-fiction")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 356, height: 198)
+                                        .clipped()
+                                }
                             }
                             
                             
@@ -99,10 +104,14 @@ struct HomeView: View {
                     sectionHeader(title: "Latest Arrivals")
                     
                     if isLoadingRecent {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(alignment: .top, spacing: -35) {
+                                ForEach(0..<5, id: \.self) { _ in
+                                    BookCardSkeleton()
+                                }
+                            }
+                            .padding(.leading, 11)
+                        }
                     } else if let error = recentError {
                         Text(error)
                             .foregroundColor(.red)
@@ -118,10 +127,14 @@ struct HomeView: View {
                     sectionHeader(title: "For You")
                     
                     if isLoadingRecommended {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(alignment: .top, spacing: -35) {
+                                ForEach(0..<5, id: \.self) { _ in
+                                    BookCardSkeleton()
+                                }
+                            }
+                            .padding(.leading, 11)
+                        }
                     } else if let error = recommendedError {
                         Text(error)
                             .foregroundColor(.red)
@@ -155,10 +168,14 @@ struct HomeView: View {
                     
                     // Genre Books Display
                     if isLoadingGenre {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                            .frame(maxWidth: .infinity)
-                            .padding()
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(alignment: .top, spacing: -35) {
+                                ForEach(0..<5, id: \.self) { _ in
+                                    BookCardSkeleton()
+                                }
+                            }
+                            .padding(.leading, 11)
+                        }
                     } else if let error = genreError {
                         Text(error)
                             .foregroundColor(.red)
@@ -235,9 +252,29 @@ struct HomeView: View {
                 .font(.title2)
                 .bold()
             Spacer()
-            Button("See All") {}
-                .foregroundColor(.orange)
-                .font(.system(size: 16, weight: .medium))
+            if title == "Latest Arrivals" {
+                NavigationLink(destination: AllBooksView(title: title, books: recentBooks, isLoading: isLoadingRecent)) {
+                    Text("See All")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 16, weight: .medium))
+                }
+            } else if title == "For You" {
+                NavigationLink(destination: AllBooksView(title: title, books: recommendedBooks, isLoading: isLoadingRecommended)) {
+                    Text("See All")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 16, weight: .medium))
+                }
+            } else if title == "Browse By Genre" && selectedGenre != nil {
+                NavigationLink(destination: AllBooksView(title: selectedGenre ?? "Genre", books: genreBooks, isLoading: isLoadingGenre)) {
+                    Text("See All")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 16, weight: .medium))
+                }
+            } else {
+                Button("See All") {}
+                    .foregroundColor(.orange)
+                    .font(.system(size: 16, weight: .medium))
+            }
         }
         .padding(.horizontal)
     }
@@ -247,7 +284,9 @@ struct HomeView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: -35) {
                 ForEach(recentBooks) { book in
-                    RecentBookCard(book: book)
+                    NavigationLink(destination: BookDetailView(book: Book(from: book))) {
+                        RecentBookCard(book: book)
+                    }
                 }
             }
             .padding(.leading, 11)
@@ -259,7 +298,9 @@ struct HomeView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: -35) {
                 ForEach(recommendedBooks) { book in
-                    RecentBookCard(book: book)
+                    NavigationLink(destination: BookDetailView(book: Book(from: book))) {
+                        RecentBookCard(book: book)
+                    }
                 }
             }
             .padding(.leading, 11)
@@ -271,7 +312,9 @@ struct HomeView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: -35) {
                 ForEach(genreBooks) { book in
-                    RecentBookCard(book: book)
+                    NavigationLink(destination: BookDetailView(book: Book(from: book))) {
+                        RecentBookCard(book: book)
+                    }
                 }
             }
             .padding(.leading, 11)
@@ -519,21 +562,326 @@ struct GenreButton: View {
     }
 }
 
-// MARK: - Other Views
-
-struct MyShelfView: View {
+// MARK: - BookCardSkeleton Component
+struct BookCardSkeleton: View {
     var body: some View {
-        Text("MyShelf View")
+        VStack(alignment: .leading, spacing: 4) {
+            // Skeleton for book cover
+            ZStack {
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 1.5)
+                    .frame(width: 120, height: 150)
+                
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 115, height: 145)
+                    .shimmering()
+            }
+            
+            // Skeleton for title
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 120, height: 14)
+                .cornerRadius(2)
+                .shimmering()
+                .padding(.top, 4)
+            
+            // Skeleton for author
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 80, height: 13)
+                .cornerRadius(2)
+                .shimmering()
+                .padding(.top, 4)
+        }
+        .frame(width: 180)
     }
 }
 
-struct MyBookView: View {
-    var body: some View {
-        Text("MyBook View")
+// MARK: - Shimmering Effect
+extension View {
+    func shimmering() -> some View {
+        self.modifier(ShimmeringEffect())
+    }
+}
+
+struct ShimmeringEffect: ViewModifier {
+    @State private var phase: CGFloat = 0
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geometry in
+                    LinearGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .white.opacity(0.5), location: 0.3),
+                            .init(color: .white.opacity(0.5), location: 0.7),
+                            .init(color: .clear, location: 1)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: geometry.size.width * 2)
+                    .offset(x: -geometry.size.width + (geometry.size.width * 2) * phase)
+                }
+            )
+            .mask(content)
+            .onAppear {
+                withAnimation(Animation.linear(duration: 2).repeatForever(autoreverses: false)) {
+                    self.phase = 1
+                }
+            }
     }
 }
 
 // MARK: - Preview
 #Preview {
     HomeView()
+}
+
+// MARK: - Book Extension for LibraryBook conversion
+extension Book {
+    init(from libraryBook: LibraryBook) {
+        self.init(
+            id: libraryBook.id,
+            title: libraryBook.title,
+            author: [libraryBook.author], // Convert single author to array
+            genre: libraryBook.genre ?? "Unknown",
+            publicationDate: libraryBook.publicationDate ?? "Unknown",
+            totalCopies: libraryBook.totalCopies ?? 0,
+            availableCopies: libraryBook.availableCopies ?? 0,
+            ISBN: libraryBook.ISBN ?? "",
+            Description: libraryBook.Description,
+            shelfLocation: libraryBook.shelfLocation,
+            dateAdded: libraryBook.dateAdded ?? "",
+            publisher: libraryBook.publisher,
+            imageLink: libraryBook.imageLink
+        )
+    }
+}
+
+// MARK: - AllBooksView
+struct AllBooksView: View {
+    let title: String
+    let books: [LibraryBook]
+    let isLoading: Bool
+    @Environment(\.presentationMode) var presentationMode
+    @State private var gridColumns = [GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 15)]
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Custom Navigation Bar
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .frame(width: 65, height: 60)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(width: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.trailing, -1),
+                        alignment: .trailing
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+                    .overlay(
+                        Button(action: {
+                            presentationMode.wrappedValue.dismiss()
+                        }) {
+                            Image(systemName: "arrow.left")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .foregroundColor(.black)
+                        }
+                        .padding(.leading, 20),
+                        alignment: .leading
+                    )
+                
+                Rectangle()
+                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .frame(maxWidth: .infinity, maxHeight: 60)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(width: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.leading, -1),
+                        alignment: .leading
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+            }
+            .overlay(
+                Text(title)
+                    .font(.custom("Charter", size: 20))
+                    .bold()
+                    .foregroundColor(.black),
+                alignment: .center
+            )
+            .frame(width: 400)
+            .padding(.horizontal, -20)
+            
+            // Content
+            if isLoading {
+                GridBooksSkeleton()
+            } else if books.isEmpty {
+                VStack {
+                    Image(systemName: "book.closed")
+                        .font(.system(size: 50))
+                        .foregroundColor(.gray)
+                        .padding()
+                    
+                    Text("No books available")
+                        .font(.custom("Charter", size: 18))
+                        .foregroundColor(.gray)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: gridColumns, spacing: 25) {
+                        ForEach(books) { book in
+                            NavigationLink(destination: BookDetailView(book: Book(from: book))) {
+                                GridBookCard(book: book)
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            }
+        }
+        .navigationBarHidden(true)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+    }
+}
+
+// MARK: - GridBookCard
+struct GridBookCard: View {
+    let book: LibraryBook
+    
+    var body: some View {
+        VStack(alignment: .center, spacing: 8) {
+            // Book Cover with Black Square Border
+            ZStack {
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 1.5)
+                    .frame(width: 140, height: 185)
+                
+                if let imageUrl = book.imageLink, !imageUrl.isEmpty {
+                    AsyncImage(url: URL(string: imageUrl)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Color.gray.opacity(0.3)
+                    }
+                    .frame(width: 135, height: 180)
+                    .clipped()
+                    .background(Color.white)
+                } else {
+                    Image(systemName: "book.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 70)
+                        .foregroundColor(.gray)
+                        .frame(width: 135, height: 180)
+                        .background(Color.white)
+                }
+            }
+            
+            // Text Container
+            VStack(alignment: .center, spacing: 4) {
+                Text(book.title)
+                    .font(.custom("Charter", size: 14))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .foregroundColor(.black)
+                    .frame(height: 40)
+                
+                Text(book.author)
+                    .font(.custom("Charter", size: 12))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            .frame(width: 140)
+        }
+        .frame(width: 160, height: 270)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+    }
+}
+
+// MARK: - GridBooksSkeleton
+struct GridBooksSkeleton: View {
+    let columns = [GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 15)]
+    
+    var body: some View {
+        ScrollView {
+            LazyVGrid(columns: columns, spacing: 25) {
+                ForEach(0..<10, id: \.self) { _ in
+                    GridBookCardSkeleton()
+                }
+            }
+            .padding()
+        }
+    }
+}
+
+// MARK: - GridBookCardSkeleton
+struct GridBookCardSkeleton: View {
+    var body: some View {
+        VStack(alignment: .center, spacing: 8) {
+            // Skeleton for book cover
+            ZStack {
+                Rectangle()
+                    .stroke(Color.black, lineWidth: 1.5)
+                    .frame(width: 140, height: 185)
+                
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 135, height: 180)
+                    .shimmering()
+            }
+            
+            // Skeleton for title
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 120, height: 14)
+                .cornerRadius(2)
+                .shimmering()
+                .padding(.top, 4)
+                .frame(height: 40)
+            
+            // Skeleton for author
+            Rectangle()
+                .fill(Color.gray.opacity(0.3))
+                .frame(width: 80, height: 12)
+                .cornerRadius(2)
+                .shimmering()
+        }
+        .frame(width: 160, height: 270)
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+    }
 }
