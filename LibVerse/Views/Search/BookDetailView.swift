@@ -787,22 +787,3 @@ struct AddToShelfView: View {
     }
 }
 
-#Preview {
-    let sampleBook = Book(
-        id: UUID(),
-        title: "Harry Potter and the Sorcerer's Stone",
-        author: ["J.K. Rowling"],
-        genre: "Fantasy",
-        publicationDate: "1997-06-26",
-        totalCopies: 10,
-        availableCopies: 5,
-        ISBN: "9780590353427",
-        Description: "Die-hard Harry Potter audiobook fans will list the ways in which Dale differs from Fry. We love both of their performances, but some fans are firmly Team Dale or Team Fry. There's so much to love about Dale's interpretation in the U.S. edition of the audiobooks. From his voicing of a whiny Draco to the wispy, heartless tones of Voldemort, he gives each character a life of their own.",
-        shelfLocation: "A1",
-        dateAdded: "2023-03-21",
-        publisher: "Audible Verse, Inc.",
-        imageLink: "https://books.google.com/books/content?id=hjEFCAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
-    )
-    return BookDetailView(book: sampleBook)
-        .environmentObject(SupabaseManager.shared)
-}
