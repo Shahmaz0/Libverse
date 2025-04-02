@@ -263,7 +263,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to Cart")
+                                    Text("Add to Bag")
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center

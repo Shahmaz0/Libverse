@@ -271,6 +271,10 @@ struct AnnouncementDetailView: View {
                         
                         Spacer()
                         
+                        Text(dateFormatter.string(from: announcement.created_at))
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        
                         if !hasMarkedAsViewed && announcement.isNew {
                             Text("NEW")
                                 .font(.caption)
@@ -282,10 +286,6 @@ struct AnnouncementDetailView: View {
                                 .cornerRadius(4)
                         }
                     }
-                    
-                    Text(dateFormatter.string(from: announcement.created_at))
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
                 }
                 .padding(.bottom, 8)
                 
@@ -293,22 +293,6 @@ struct AnnouncementDetailView: View {
                 Rectangle()
                     .fill(Color(red: 255/255, green: 111/255, blue: 45/255))
                     .frame(height: 2)
-                
-                // Metadata row
-                HStack {
-//                    Label("Type: \(announcement.type)", systemImage: "tag")
-//                        .font(.caption)
-//                        .foregroundColor(.secondary)
-//                    
-//                    Spacer()
-                    
-                    if let expiryDate = announcement.expiry_date {
-                        Label("Expires: \(shortDateFormatter.string(from: expiryDate))", systemImage: "calendar")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding(.vertical, 8)
                 
                 // Full content
                 Text(announcement.content)
