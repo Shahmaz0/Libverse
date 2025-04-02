@@ -18,6 +18,10 @@ struct SearchView: View {
         ("Business", "Business"),
         ("Mathematics", "Mathematic"),
         ("Law", "Law"),
+        ("Medicine", "Medicine"),
+        ("Fiction", "Fiction"),
+        ("Non-Fiction", "NonFiction"),
+        ("Literature", "Literature")
     ]
     
     private func normalizeText(_ text: String) -> String {
@@ -164,7 +168,7 @@ struct SearchView: View {
                         } else {
                             // Show categories as grid
                             VStack(spacing: 20) {
-                                ForEach(0..<2) { row in
+                                ForEach(0..<4) { row in
                                     HStack(spacing: 16) {
                                         ForEach(0..<2) { col in
                                             let index = row * 2 + col
@@ -182,11 +186,7 @@ struct SearchView: View {
                                                                     .stroke(Color.black, lineWidth: 1)
                                                             )
                                                         
-//                                                        Text(category)
-//                                                            .font(.custom("sfprodisplaymedium", size: 15))
-//                                                            .foregroundColor(.white)
-//                                                            .padding(6)
-//                                                            .background(Color.black.opacity(0.5))
+                                                     
                                                     }
                                                 }
                                                 .buttonStyle(PlainButtonStyle())
