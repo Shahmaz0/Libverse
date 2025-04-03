@@ -143,7 +143,7 @@ struct MyBag: View {
                             showingQRCode = true
                         }
                     }) {
-                        Text("Issue all")
+                        Text("Borrow all")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color(red: 255/255, green: 111/255, blue: 45/255))
