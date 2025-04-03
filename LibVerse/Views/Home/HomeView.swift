@@ -23,6 +23,7 @@ struct NotificationBadge: View {
 
 // MARK: - HomeView with Announcements and Popular Section
 struct HomeView: View {
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     @State private var recentBooks: [LibraryBook] = []
     @State private var recommendedBooks: [LibraryBook] = []
     @State private var genreBooks: [LibraryBook] = []
@@ -50,7 +51,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // More to Explore Section
-                    Text("More to Explore")
+                    Text(LocalizationManager.shared.localizedString("more_to_explore"))
                         .font(.title2)
                         .bold()
                         .padding(.horizontal)
@@ -101,7 +102,7 @@ struct HomeView: View {
                         .padding(.horizontal, 18)
                     }
 
-                    sectionHeader(title: "Latest Arrivals")
+                    sectionHeader(title: LocalizationManager.shared.localizedString("latest_arrivals"))
                     
                     if isLoadingRecent {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -117,14 +118,14 @@ struct HomeView: View {
                             .foregroundColor(.red)
                             .padding()
                     } else if recentBooks.isEmpty {
-                        Text("No new arrivals available")
+                        Text(LocalizationManager.shared.localizedString("no_new_arrivals"))
                             .foregroundColor(.gray)
                             .padding()
                     } else {
                         recentBooksScroll()
                     }
                     
-                    sectionHeader(title: "For You")
+                    sectionHeader(title: LocalizationManager.shared.localizedString("for_you"))
                     
                     if isLoadingRecommended {
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -140,21 +141,21 @@ struct HomeView: View {
                             .foregroundColor(.red)
                             .padding()
                     } else if recommendedBooks.isEmpty {
-                        Text("No personalized recommendations available")
+                        Text(LocalizationManager.shared.localizedString("no_recommendations"))
                             .foregroundColor(.gray)
                             .padding()
                     } else {
                         recommendedBooksScroll()
                     }
                     
-                    sectionHeader(title: "Browse By Genre")
+                    sectionHeader(title: LocalizationManager.shared.localizedString("browse_by_genre"))
                     
                     // Genre Selection ScrollView
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
                             ForEach(genres, id: \.self) { genre in
                                 GenreButton(
-                                    genre: genre,
+                                    genre: LocalizationManager.shared.localizedString(genre.lowercased()),
                                     isSelected: selectedGenre == genre,
                                     action: {
                                         selectedGenre = genre
@@ -196,7 +197,7 @@ struct HomeView: View {
                             Image(systemName: "megaphone.fill")
                                 .symbolRenderingMode(.hierarchical)
                                 .font(.system(size: 20))
-                                .accessibilityLabel("Announcement")
+                                .accessibilityLabel(LocalizationManager.shared.localizedString("announcements"))
                                 .padding(.top, 4)
                             
                             if announcementManager.unreadCount > 0 {
@@ -213,7 +214,7 @@ struct HomeView: View {
                         Image(systemName: "person.crop.circle")
                             .symbolRenderingMode(.hierarchical)
                             .font(.system(size: 22))
-                            .accessibilityLabel("Profile")
+                            .accessibilityLabel(LocalizationManager.shared.localizedString("profile"))
                     }
                 }
             }
@@ -248,7 +249,11 @@ struct HomeView: View {
                 // Refresh recommendations when genre preferences are updated
                 fetchRecommendedBooks()
             }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"))) { _ in
+                // Force view refresh when language changes
+            }
         }
+        .id(localizationManager.currentLanguage.rawValue) // Force view refresh when language changes
     }
     
     // Helper for section headers
@@ -258,26 +263,26 @@ struct HomeView: View {
                 .font(.title2)
                 .bold()
             Spacer()
-            if title == "Latest Arrivals" {
-                NavigationLink(destination: AllBooksView(title: title, books: recentBooks, isLoading: isLoadingRecent)) {
-                    Text("See All")
+            if title == LocalizationManager.shared.localizedString("latest_arrivals") {
+                NavigationLink(destination: AllBooksView(title: title, books: recentBooks)) {
+                    Text(LocalizationManager.shared.localizedString("see_all"))
                         .foregroundColor(.orange)
                         .font(.system(size: 16, weight: .medium))
                 }
-            } else if title == "For You" {
-                NavigationLink(destination: AllBooksView(title: title, books: recommendedBooks, isLoading: isLoadingRecommended)) {
-                    Text("See All")
+            } else if title == LocalizationManager.shared.localizedString("for_you") {
+                NavigationLink(destination: AllBooksView(title: title, books: recommendedBooks)) {
+                    Text(LocalizationManager.shared.localizedString("see_all"))
                         .foregroundColor(.orange)
                         .font(.system(size: 16, weight: .medium))
                 }
-            } else if title == "Browse By Genre" && selectedGenre != nil {
-                NavigationLink(destination: AllBooksView(title: selectedGenre ?? "Genre", books: genreBooks, isLoading: isLoadingGenre)) {
-                    Text("See All")
+            } else if title == LocalizationManager.shared.localizedString("browse_by_genre") && selectedGenre != nil {
+                NavigationLink(destination: AllBooksView(title: selectedGenre ?? "Genre", books: genreBooks)) {
+                    Text(LocalizationManager.shared.localizedString("see_all"))
                         .foregroundColor(.orange)
                         .font(.system(size: 16, weight: .medium))
                 }
             } else {
-                Button("See All") {}
+                Button(LocalizationManager.shared.localizedString("see_all")) {}
                     .foregroundColor(.orange)
                     .font(.system(size: 16, weight: .medium))
             }
@@ -484,6 +489,7 @@ struct HomeView: View {
 // MARK: - Recent Book Card
 struct RecentBookCard: View {
     let book: LibraryBook
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -517,14 +523,14 @@ struct RecentBookCard: View {
             
             // Text Container
             VStack(alignment: .leading, spacing: 2) {
-                Text(book.title)
+                TranslatedBookTitle(book.title)
                     .font(.custom("Charter", size: 14))
                     .lineLimit(2)
                     .frame(width: 160, alignment: .leading)
                     .multilineTextAlignment(.leading)
                     .foregroundColor(.black)
                 
-                Text(book.author)
+                TranslatedBookAuthor(book.author)
                     .font(.custom("Charter", size: 13))
                     .foregroundColor(.gray)
                     .lineLimit(1)
@@ -533,12 +539,14 @@ struct RecentBookCard: View {
             .frame(width: 160)
         }
         .frame(width: 180)
+        .id(localizationManager.currentLanguage.rawValue)
     }
 }
 
 // MARK: - Popular Book Card with Black Square Border and Increased Width
 struct PopularCard: View {
     let book: PopularBook
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -558,13 +566,13 @@ struct PopularCard: View {
             
             // Text Container
             VStack(alignment: .leading, spacing: 2) {
-                Text(book.title)
+                TranslatedBookTitle(book.title)
                     .font(.custom("Charter", size: 14))
                     .lineLimit(2)
                     .frame(width: 160, alignment: .leading)
                     .multilineTextAlignment(.leading)
                 
-                Text(book.author)
+                TranslatedBookAuthor(book.author)
                     .font(.custom("Charter", size: 13))
                     .foregroundColor(.gray)
                     .lineLimit(1)
@@ -573,6 +581,7 @@ struct PopularCard: View {
             .frame(width: 160)
         }
         .frame(width: 180)
+        .id(localizationManager.currentLanguage.rawValue)
     }
 }
 
@@ -681,9 +690,12 @@ struct ShimmeringEffect: ViewModifier {
 struct AllBooksView: View {
     let title: String
     let books: [LibraryBook]
-    let isLoading: Bool
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    
     @Environment(\.presentationMode) var presentationMode
-    @State private var gridColumns = [GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 15)]
+    @State private var isLoading = true
+    
+    private let gridColumns = [GridItem(.adaptive(minimum: 160, maximum: 180), spacing: 15)]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -771,7 +783,7 @@ struct AllBooksView: View {
                         .foregroundColor(.gray)
                         .padding()
                     
-                    Text("No books available")
+                    Text(LocalizationManager.shared.localizedString("no_books_available"))
                         .font(.custom("Charter", size: 18))
                         .foregroundColor(.gray)
                 }
@@ -791,12 +803,20 @@ struct AllBooksView: View {
         }
         .navigationBarHidden(true)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .id(localizationManager.currentLanguage.rawValue)
+        .onAppear {
+            // Simulate loading delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                isLoading = false
+            }
+        }
     }
 }
 
 // MARK: - GridBookCard
 struct GridBookCard: View {
     let book: LibraryBook
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
@@ -830,14 +850,14 @@ struct GridBookCard: View {
             
             // Text Container
             VStack(alignment: .center, spacing: 4) {
-                Text(book.title)
+                TranslatedBookTitle(book.title)
                     .font(.custom("Charter", size: 14))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .foregroundColor(.black)
                     .frame(height: 40)
                 
-                Text(book.author)
+                TranslatedBookAuthor(book.author)
                     .font(.custom("Charter", size: 12))
                     .foregroundColor(.gray)
                     .lineLimit(1)
@@ -846,6 +866,7 @@ struct GridBookCard: View {
         }
         .frame(width: 160, height: 270)
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .id(localizationManager.currentLanguage.rawValue)
     }
 }
 

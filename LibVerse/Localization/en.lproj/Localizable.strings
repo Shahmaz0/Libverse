@@ -1,0 +1,71 @@
+/* Profile View */
+"profile" = "Profile";
+"currently_borrowed" = "Currently Borrowed";
+"borrowing_history" = "Borrowing History";
+"current_fines" = "Current Fines";
+"library_policies" = "Library Policies";
+"logout" = "Logout";
+"no_books_currently_borrowed" = "No books currently borrowed";
+"no_borrowing_history_found" = "No borrowing history found";
+"email" = "Email";
+"enrollment_number" = "Enrollment Number";
+"back" = "Back";
+"language" = "Language";
+
+/* Edit Profile */
+"edit_profile" = "Edit Profile";
+"first_name" = "First Name";
+"last_name" = "Last Name";
+"save_changes" = "Save Changes";
+"profile_updated_successfully" = "Profile updated successfully!";
+"failed_to_update_profile" = "Failed to update profile:";
+"cancel" = "Cancel";
+
+/* Loading */
+"loading_your_shelves" = "Loading your shelves...";
+
+/* General */
+"n_a" = "N/A";
+
+/* HomeView */
+"more_to_explore" = "More to Explore";
+"latest_arrivals" = "Latest Arrivals";
+"for_you" = "For You";
+"browse_by_genre" = "Browse By Genre";
+"no_new_arrivals" = "No new arrivals available";
+"no_recommendations" = "No personalized recommendations available";
+"see_all" = "See All";
+"no_books_available" = "No books available";
+
+/* TabBar */
+"home" = "Home";
+"search" = "Search";
+"my_shelf" = "MyShelf";
+"my_bag" = "MyBag";
+
+/* Announcements */
+"announcements" = "Announcements";
+
+/* Genres */
+"technology" = "Technology";
+"business" = "Business";
+"reference" = "Reference";
+"medicine" = "Medicine";
+"mathematics" = "Mathematics";
+"law" = "Law";
+"science" = "Science";
+
+/* Book Details */
+"book_details" = "Book Details";
+"genre" = "Genre";
+"shelf_location" = "Shelf Location";
+"available_copies" = "Available Copies";
+"publisher" = "Publisher";
+"released" = "Released";
+"by" = "By:";
+"issue_now" = "Issue Now";
+"return" = "Return";
+"account_disabled" = "Your account is currently disabled. Please contact the library admin.";
+"add_to_favourites" = "Add to favourites";
+"add_to_myshelf" = "Add to myShelf";
+"add_to_bag" = "Add to Bag"; 
