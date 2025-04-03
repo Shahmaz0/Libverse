@@ -18,16 +18,6 @@ struct SignUpView: View {
     @State private var navigateToOTP: Bool = false
     @State private var hasSignUpError: Bool = false
     @State private var errorMessage: String = ""
-    
-    // Add bindings for app state
-    @Binding var showMainApp: Bool
-    @Binding var showUserInitialView: Bool
-    
-    // Add initializer with default parameters for preview support
-    init(showMainApp: Binding<Bool> = .constant(false), showUserInitialView: Binding<Bool> = .constant(true)) {
-        self._showMainApp = showMainApp
-        self._showUserInitialView = showUserInitialView
-    }
 
     private func isPasswordValid(_ password: String) -> Bool {
         let hasCapitalLetter = password.contains { $0.isUppercase }
@@ -146,7 +136,7 @@ struct SignUpView: View {
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
         .navigationDestination(isPresented: $navigateToOTP) {
-            OTPVerificationView(email: collegeEmail, password: password, showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+            OTPVerificationView(email: collegeEmail, password: password)
         }
     }
     

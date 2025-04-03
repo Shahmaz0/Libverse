@@ -15,16 +15,6 @@ struct LogInView: View {
     @State private var hasLoginError = false
     @State private var errorMessage: String = ""
     
-    // Add bindings for app state
-    @Binding var showMainApp: Bool
-    @Binding var showUserInitialView: Bool
-    
-    // Add initializer with default parameters for preview support
-    init(showMainApp: Binding<Bool> = .constant(false), showUserInitialView: Binding<Bool> = .constant(true)) {
-        self._showMainApp = showMainApp
-        self._showUserInitialView = showUserInitialView
-    }
-    
     var body: some View {
         NavigationStack {
             VStack {
@@ -96,7 +86,7 @@ struct LogInView: View {
                         .disabled(isLoading)
                         
                         // Navigation to SignUpView
-                        NavigationLink(destination: SignUpView(showMainApp: $showMainApp, showUserInitialView: $showUserInitialView).navigationBarBackButtonHidden(true)) {
+                        NavigationLink(destination: SignUpView().navigationBarBackButtonHidden(true)) {
                             Text("New User? Sign Up")
                                 .font(.custom("Courier", size: 16))
                                 .foregroundColor(.black)
@@ -109,13 +99,13 @@ struct LogInView: View {
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
             .navigationDestination(isPresented: $isAuthenticated) {
                 if !hasCompletedOnboarding {
-                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding, showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
                 } else {
                     TabBarView()
                 }
             }
             .navigationDestination(isPresented: $showOTPView) {
-                OTPVerificationView(email: collegeEmail, password: password, showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+                OTPVerificationView(email: collegeEmail, password: password)
             }
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))

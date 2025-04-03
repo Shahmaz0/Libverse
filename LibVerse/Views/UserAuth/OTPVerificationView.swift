@@ -4,9 +4,6 @@ struct OTPVerificationView: View {
     let email: String
     let password: String
     
-    @Binding var showMainApp: Bool
-    @Binding var showUserInitialView: Bool
-    
     @State private var otpFields: [String] = Array(repeating: "", count: 6)
     @FocusState private var fieldFocus: Int?
     @State private var errorMessage: String?
@@ -21,13 +18,6 @@ struct OTPVerificationView: View {
     @State private var isResendEnabled = false
     @Environment(\.dismiss) private var dismiss
         
-    init(email: String, password: String, showMainApp: Binding<Bool> = .constant(false), showUserInitialView: Binding<Bool> = .constant(true)) {
-        self.email = email
-        self.password = password
-        self._showMainApp = showMainApp
-        self._showUserInitialView = showUserInitialView
-    }
-    
     var otp: String {
         otpFields.joined()
     }
@@ -143,7 +133,7 @@ struct OTPVerificationView: View {
             .alert("Verification", isPresented: $showAlert) {
                 Button("OK") {
                     if alertMessage == "Email verified successfully!" {
-                        updateAppState()
+                        navigateToHome = true
                     }
                 }
             } message: {
@@ -162,11 +152,6 @@ struct OTPVerificationView: View {
                 timer = nil
             }
         }
-    }
-    
-    private func updateAppState() {
-        showMainApp = true
-        showUserInitialView = false
     }
     
     private func verifyOTP() {
@@ -188,7 +173,6 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
-                                updateAppState()
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription
@@ -217,9 +201,6 @@ struct OTPVerificationView: View {
                                 }
                                 // Post notification that user is logged in
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
-                                
-                                // Update app state
-                                updateAppState()
                                 
                                 // Check if user has completed genre onboarding
                                 if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
@@ -255,10 +236,6 @@ struct OTPVerificationView: View {
                                 }
                                 // Post notification that user is logged in
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
-                                
-                                // Update app state
-                                updateAppState()
-                                
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription
@@ -319,9 +296,5 @@ struct OTPVerificationView: View {
             }
         }
     }
-}
-
-#Preview {
-    OTPVerificationView(email: "test@gmail.com", password: "password123")
 }
 

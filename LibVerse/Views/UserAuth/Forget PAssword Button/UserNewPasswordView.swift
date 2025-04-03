@@ -72,7 +72,7 @@ struct UserNewPasswordView: View {
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
         .navigationDestination(isPresented: $navigateToLogin) {
-            LogInView(showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+                        LogInView()
         }
         .alert("Password Reset", isPresented: $showAlert) {
             Button("OK") {

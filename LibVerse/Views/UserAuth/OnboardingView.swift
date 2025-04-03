@@ -24,15 +24,7 @@ enum GenreType: String, CaseIterable {
 
 struct OnboardingView: View {
     @Binding var hasCompletedOnboarding: Bool
-    @Binding var showMainApp: Bool
-    @Binding var showUserInitialView: Bool
     @State private var selectedGenres: Set<GenreType> = []
-    
-    init(hasCompletedOnboarding: Binding<Bool>, showMainApp: Binding<Bool> = .constant(false), showUserInitialView: Binding<Bool> = .constant(true)) {
-        self._hasCompletedOnboarding = hasCompletedOnboarding
-        self._showMainApp = showMainApp
-        self._showUserInitialView = showUserInitialView
-    }
     
     var body: some View {
         NavigationView {
@@ -72,8 +64,6 @@ struct OnboardingView: View {
                         Button(action: {
                             withAnimation {
                                 hasCompletedOnboarding = true
-                                showMainApp = true
-                                showUserInitialView = false
                             }
                         }) {
                             Text("Continue")
@@ -90,8 +80,6 @@ struct OnboardingView: View {
                         Button(action: {
                             withAnimation {
                                 hasCompletedOnboarding = true
-                                showMainApp = true
-                                showUserInitialView = false
                             }
                         }) {
                             Text("Skip for now")

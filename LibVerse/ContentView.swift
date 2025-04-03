@@ -2,22 +2,20 @@ import SwiftUI
 import Supabase
 
 struct ContentView: View {
-    @ObservedObject var appState: AppState
-    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @State private var isAuthenticated: Bool = false
+    @State private var showGenrePreferences: Bool = false
     @StateObject private var supabaseManager = SupabaseManager.shared
     
     var body: some View {
-        if appState.showMainApp {
+        if isAuthenticated {
             TabBarView()
                 .environmentObject(supabaseManager)
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("UserDidLogout"))) { _ in
                     // Update authentication state when user logs out
-                    appState.showMainApp = false
-                    appState.showUserInitialView = true
+                    isAuthenticated = false
                 }
-                .id(localizationManager.currentLanguage.rawValue) // Force view refresh when language changes
         } else {
-            LogInView(showMainApp: $appState.showMainApp, showUserInitialView: $appState.showUserInitialView)
+            LogInView()
                 .environmentObject(supabaseManager)
                 .onAppear {
                     // Check if user is already logged in
@@ -32,8 +30,7 @@ struct ContentView: View {
                                 SupabaseManager.shared.currentSession = session
                                 await SupabaseManager.shared.fetchCurrentMember()
                                 DispatchQueue.main.async {
-                                    appState.showMainApp = true
-                                    appState.showUserInitialView = false
+                                    isAuthenticated = true
                                 }
                             }
                         } catch {
@@ -42,14 +39,12 @@ struct ContentView: View {
                     }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("userLoggedIn"))) { _ in
-                    appState.showMainApp = true
-                    appState.showUserInitialView = false
+                    isAuthenticated = true
                 }
-                .id(localizationManager.currentLanguage.rawValue) // Force view refresh when language changes
         }
     }
 }
     
 #Preview {
-    ContentView(appState: AppState())
+    ContentView()
 }
