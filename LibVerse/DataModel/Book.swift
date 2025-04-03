@@ -21,13 +21,30 @@ struct Book: Identifiable, Codable, Hashable {
     let dateAdded: String?
     let publisher: String?
     let imageLink: String?
+    
+    // Custom initializer for creating Book from LibraryBook
+    init(from libraryBook: LibraryBook) {
+        self.id = libraryBook.id
+        self.title = libraryBook.title
+        self.author = libraryBook.authorArray ?? [libraryBook.author]
+        self.genre = libraryBook.genre ?? "Unknown"
+        self.publicationDate = libraryBook.publicationDate ?? "Unknown"
+        self.totalCopies = libraryBook.totalCopies ?? 0
+        self.availableCopies = libraryBook.availableCopies ?? 0
+        self.ISBN = libraryBook.ISBN ?? ""
+        self.Description = libraryBook.Description
+        self.shelfLocation = libraryBook.shelfLocation
+        self.dateAdded = libraryBook.dateAdded
+        self.publisher = libraryBook.publisher
+        self.imageLink = libraryBook.imageLink
+    }
 }
 
 
 struct LibraryBook: Identifiable, Codable {
     let id: UUID
     let title: String
-    private let authorArray: [String]?  // To handle author coming as array
+    let authorArray: [String]?  // Changed from private to public
     let genre: String?
     let publicationDate: String?
     let totalCopies: Int?

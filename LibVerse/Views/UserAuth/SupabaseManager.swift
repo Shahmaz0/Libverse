@@ -31,6 +31,7 @@ struct Member: Codable {
     var fines: Double
     var borrowedBooks: [BorrowedBook]
     var borrowingHistory: [BookIssue]?
+    var selectedGenres: [String]?
     
     init(
         id: UUID? = nil,
@@ -45,7 +46,8 @@ struct Member: Codable {
         enrollmentNumber: String? = nil,
         fines: Double = 0.0,
         borrowedBooks: [BorrowedBook] = [],
-        borrowingHistory: [BookIssue]? = nil
+        borrowingHistory: [BookIssue]? = nil,
+        selectedGenres: [String]? = nil
     ) {
         self.id = id
         self.email = email
@@ -60,12 +62,13 @@ struct Member: Codable {
         self.fines = fines
         self.borrowedBooks = borrowedBooks
         self.borrowingHistory = borrowingHistory
+        self.selectedGenres = selectedGenres
     }
     
     enum CodingKeys: String, CodingKey {
         case id, email, password, firstName, lastName, favourites,
              myBag, shelves, created_at, enrollmentNumber, fines,
-             borrowedBooks, borrowingHistory
+             borrowedBooks, borrowingHistory, selectedGenres
     }
     
     init(from decoder: Decoder) throws {
@@ -82,6 +85,7 @@ struct Member: Codable {
         fines = try container.decodeIfPresent(Double.self, forKey: .fines) ?? 0.0
         borrowedBooks = try container.decodeIfPresent([BorrowedBook].self, forKey: .borrowedBooks) ?? []
         borrowingHistory = try container.decodeIfPresent([BookIssue].self, forKey: .borrowingHistory)
+        selectedGenres = try container.decodeIfPresent([String].self, forKey: .selectedGenres)
         
         // Handle shelves decoding
         if let shelvesObj = try? container.decodeIfPresent([String: [String]].self, forKey: .shelves) {
@@ -115,6 +119,7 @@ struct Member: Codable {
         try container.encode(fines, forKey: .fines)
         try container.encode(borrowedBooks, forKey: .borrowedBooks)
         try container.encodeIfPresent(borrowingHistory, forKey: .borrowingHistory)
+        try container.encodeIfPresent(selectedGenres, forKey: .selectedGenres)
         
         if let shelves = shelves {
             try container.encode(shelves, forKey: .shelves)
@@ -338,7 +343,8 @@ class SupabaseManager: ObservableObject {
             "enrollmentNumber": enrollmentNumber != nil ? AnyCodable(enrollmentNumber!) : AnyCodable(NSNull()),
             "myBag": AnyCodable([]),
             "shelves": AnyCodable(["Favorites": []]),
-            "fine": AnyCodable(0.0)
+            "fine": AnyCodable(0.0),
+            "selectedGenres": AnyCodable([])
         ]
         
         do {
@@ -374,6 +380,14 @@ class SupabaseManager: ObservableObject {
             
             if var member = response.first {
                 member.borrowingHistory = borrowingHistory
+                
+                // Update UserPreferences with the member's selected genres
+                if let selectedGenres = member.selectedGenres, !selectedGenres.isEmpty {
+                    DispatchQueue.main.async {
+                        UserPreferences.shared.saveGenrePreferences(selectedGenres)
+                    }
+                }
+                
                 DispatchQueue.main.async {
                     self.currentMember = member
                     print("✅ Current member loaded: \(member.firstName) \(member.lastName)")
@@ -762,5 +776,69 @@ class SupabaseManager: ObservableObject {
             print("Error during OTP verification or login: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    // MARK: - Genre Management
+    
+    func updateSelectedGenres(userId: UUID, genres: [String]) async throws {
+        print("🔄 Updating selected genres for user: \(userId)")
+        
+        try await client
+            .from("Member")
+            .update(["selectedGenres": genres])
+            .eq("id", value: userId)
+            .execute()
+        
+        if var updatedMember = currentMember {
+            updatedMember.selectedGenres = genres
+            
+            DispatchQueue.main.async {
+                self.currentMember = updatedMember
+            }
+        }
+        
+        print("✅ Selected genres updated successfully")
+    }
+    
+    // MARK: - Book Recommendations
+    
+    func fetchRecommendedBooks() async throws -> [Book] {
+        print("🔄 Fetching recommended books based on user preferences")
+        
+        // If user is logged in, try to fetch based on their selected genres
+        if let userId = currentUser?.id, let member = currentMember, let selectedGenres = member.selectedGenres, !selectedGenres.isEmpty {
+            print("🔍 Finding books for selected genres: \(selectedGenres)")
+            
+            // Construct the filter query for each genre
+            let genreFilters = selectedGenres.map { "genre.eq.\($0)" }.joined(separator: ",")
+            
+            // Execute the query using OR filter
+            let response: [Book] = try await client
+                .from("Books")
+                .select()
+                .or(genreFilters)
+                .limit(10)
+                .order("dateAdded", ascending: false)
+                .execute()
+                .value
+            
+            if !response.isEmpty {
+                print("✅ Found \(response.count) genre-specific recommendations")
+                return response
+            }
+        }
+        
+        // Fallback: return random books if user has no preferences or no matches found
+        print("ℹ️ No genre preferences or matches, fetching random recommendations")
+        let response: [Book] = try await client
+            .from("Books")
+            .select()
+            .limit(10)
+            .order("dateAdded", ascending: false)
+            .execute()
+            .value
+        
+        print("✅ Found \(response.count) general recommendations")
+        return response
     }
 }
