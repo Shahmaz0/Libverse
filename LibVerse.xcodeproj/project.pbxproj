@@ -112,6 +112,8 @@
 			knownRegions = (
 				en,
 				Base,
+				hi,
+				kn,
 			);
 			mainGroup = 8B9726F32D89E18D00BC1DDA;
 			minimizedProjectReferenceProxies = 1;
@@ -276,7 +278,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"LibVerse/Preview Content\"";
-				DEVELOPMENT_TEAM = 78WNV3787M;
+				DEVELOPMENT_TEAM = 7KG2H5D767;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -306,7 +308,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"LibVerse/Preview Content\"";
-				DEVELOPMENT_TEAM = 78WNV3787M;
+				DEVELOPMENT_TEAM = 7KG2H5D767;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

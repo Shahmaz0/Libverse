@@ -17,6 +17,8 @@ struct OTPVerificationView: View {
     @State private var timer: Timer?
     @State private var isResendEnabled = false
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("isAuthenticated") private var isAuthenticated: Bool = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
         
     var otp: String {
         otpFields.joined()
@@ -199,27 +201,27 @@ struct OTPVerificationView: View {
                                 withAnimation {
                                     showSuccessMessage = true
                                 }
-                                // Post notification that user is logged in
+                                // Set authenticated flag
+                                isAuthenticated = true
+                                
+                                // Post notification for app state changes
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
                                 
-                                // Check if user has completed genre onboarding
-                                if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
-                                    // We'll show the genre onboarding after navigation
+                                // After a short delay, navigate to home
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                    navigateToHome = true
                                 }
-                                navigateToHome = true
                             }
                         } else {
                             DispatchQueue.main.async {
                                 isLoading = false
-                                errorMessage = "Failed to verify OTP"
-                                alertMessage = "Error: Failed to verify OTP"
+                                alertMessage = "Failed to verify OTP. Please try again."
                                 showAlert = true
                             }
                         }
                     } catch {
                         DispatchQueue.main.async {
                             isLoading = false
-                            errorMessage = error.localizedDescription
                             alertMessage = "Error: \(error.localizedDescription)"
                             showAlert = true
                         }
@@ -236,6 +238,10 @@ struct OTPVerificationView: View {
                                 }
                                 // Post notification that user is logged in
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
+                                
+                                // Set isAuthenticated for persistent login
+                                isAuthenticated = true
+                                
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription

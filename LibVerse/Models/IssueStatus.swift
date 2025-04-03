@@ -16,6 +16,8 @@
        let returnDate: Date
        let actualReturnDate: Date?
        let overdueDays: Int?
+       let fine: Float?
+       let isLost: Bool?
        
        enum CodingKeys: String, CodingKey {
            case id
@@ -26,6 +28,8 @@
            case returnDate
            case actualReturnDate
            case overdueDays
+           case fine
+           case isLost = "is_lost"
        }
         
         init(from decoder: Decoder) throws {
@@ -57,6 +61,8 @@
             }
             
             overdueDays = try container.decodeIfPresent(Int.self, forKey: .overdueDays)
+            fine = try container.decodeIfPresent(Float.self, forKey: .fine)
+            isLost = try container.decodeIfPresent(Bool.self, forKey: .isLost)
         }
         
         init(bookId: UUID, memberId: UUID) {
@@ -68,9 +74,11 @@
             self.returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
             self.actualReturnDate = nil
             self.overdueDays = nil
+            self.fine = nil
+            self.isLost = false
         }
         
-        init(id: UUID, bookId: UUID, memberId: UUID, issueStatus: IssueStatus, issueDate: Date, returnDate: Date, actualReturnDate: Date?, overdueDays: Int?) {
+        init(id: UUID, bookId: UUID, memberId: UUID, issueStatus: IssueStatus, issueDate: Date, returnDate: Date, actualReturnDate: Date?, overdueDays: Int?, isLost: Bool? = false) {
             self.id = id
             self.bookId = bookId
             self.memberId = memberId
@@ -79,6 +87,8 @@
             self.returnDate = returnDate
             self.actualReturnDate = actualReturnDate
             self.overdueDays = overdueDays
+            self.fine = nil
+            self.isLost = isLost
         }
         
         func calculateOverdueDays() -> Int {
@@ -99,7 +109,8 @@
                     issueDate: issueDate,
                     returnDate: returnDate,
                     actualReturnDate: nil,
-                    overdueDays: nil
+                    overdueDays: nil,
+                    isLost: isLost
                 )
                 
             case .issued:
@@ -112,7 +123,8 @@
                         issueDate: issueDate,
                         returnDate: returnDate,
                         actualReturnDate: nil,
-                        overdueDays: calculateOverdueDays()
+                        overdueDays: calculateOverdueDays(),
+                        isLost: isLost
                     )
                 }
                 
@@ -126,7 +138,8 @@
                     issueDate: issueDate,
                     returnDate: returnDate,
                     actualReturnDate: nil,
-                    overdueDays: calculateOverdueDays()
+                    overdueDays: calculateOverdueDays(),
+                    isLost: isLost
                 )
                 
             case .returned:
@@ -146,7 +159,8 @@
                 issueDate: issueDate,
                 returnDate: returnDate,
                 actualReturnDate: Date(),
-                overdueDays: nil
+                overdueDays: nil,
+                isLost: isLost
             )
         }
     }

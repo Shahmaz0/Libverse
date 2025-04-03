@@ -37,7 +37,9 @@ struct BookDetailView: View {
     @State private var showingReturnQRCode = false
     @State private var showingAddToShelf = false
     @State private var isInAnyShelf: Bool = false
+    @State private var isDisabled: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack {
@@ -106,7 +108,7 @@ struct BookDetailView: View {
                 
             }
             .overlay(
-                Text("Book Details")
+                Text(LocalizationManager.shared.localizedString("book_details"))
                     .font(.custom("Charter", size: 20))
                     .bold()
                     .foregroundColor(.black),
@@ -157,15 +159,21 @@ struct BookDetailView: View {
                         .padding(.leading, 5)
                         
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(book.title)
+                            TranslatedBookTitle(book.title)
                                 .font(.custom("Charter", size: 15))
                                 .fontWeight(.semibold)
                                 .foregroundColor(.black)
                                 .fixedSize(horizontal: false, vertical: true)
                             
-                            Text("By: \(book.author.joined(separator: ", "))")
-                                .font(.custom("Charter", size: 13))
-                                .foregroundColor(.gray)
+                            HStack(spacing: 0) {
+                                Text(LocalizationManager.shared.localizedString("by") + ": ")
+                                    .font(.custom("Charter", size: 13))
+                                    .foregroundColor(.gray)
+                                
+                                Text(LocalizationManager.shared.translateAuthor(book.author.joined(separator: ", ")))
+                                    .font(.custom("Charter", size: 13))
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -181,7 +189,7 @@ struct BookDetailView: View {
                             showingQRCode = true
                         }
                     }) {
-                        Text(isBookIssued ? "Return" : "Issue Now")
+                        Text(isBookIssued ? LocalizationManager.shared.localizedString("return") : LocalizationManager.shared.localizedString("issue_now"))
                             .frame(width: 325, height: 20)
                             .padding()
                             .background(isBookIssued ? Color.green : Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -189,6 +197,8 @@ struct BookDetailView: View {
                             .cornerRadius(0)
                             .border(.black)
                     }
+                    .disabled(isDisabled && !isBookIssued)
+                    .opacity(isDisabled && !isBookIssued ? 0.5 : 1)
                     .sheet(isPresented: $showingQRCode) {
                         if let userId = supabaseManager.currentUser?.id {
                             QRCodeGeneratorView(book: book, memberId: userId.uuidString)
@@ -204,6 +214,14 @@ struct BookDetailView: View {
                         if let issueId = currentIssueId {
                             ReturnQRCodeView(issueId: issueId)
                         }
+                    }
+                    
+                    if isDisabled && !isBookIssued {
+                        Text(LocalizationManager.shared.localizedString("account_disabled"))
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.red)
+                            .padding(.horizontal)
+                            .padding(.top, 5)
                     }
                     
                     HStack(spacing: 0) {
@@ -263,7 +281,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to Cart")
+                                    Text(LocalizationManager.shared.localizedString("add_to_bag"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -340,7 +358,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to favourites")
+                                    Text(LocalizationManager.shared.localizedString("add_to_favourites"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -388,7 +406,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to myShelf")
+                                    Text(LocalizationManager.shared.localizedString("add_to_myshelf"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -399,7 +417,7 @@ struct BookDetailView: View {
                     
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Genre")
+                            Text(LocalizationManager.shared.localizedString("genre"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -411,7 +429,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Shelf Location")
+                            Text(LocalizationManager.shared.localizedString("shelf_location"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -423,7 +441,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Available Copies")
+                            Text(LocalizationManager.shared.localizedString("available_copies"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -435,7 +453,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Publisher")
+                            Text(LocalizationManager.shared.localizedString("publisher"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -447,7 +465,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Released")
+                            Text(LocalizationManager.shared.localizedString("released"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -472,7 +490,7 @@ struct BookDetailView: View {
                             alignment: .top
                         )
                     
-                    Text(book.Description ?? "No description available")
+                    TranslatedBookDescription(book.Description ?? "No description available")
                         .font(.custom("Charter", size: 13))
                         .foregroundColor(.black)
                         .lineLimit(nil)
@@ -500,6 +518,27 @@ struct BookDetailView: View {
                             if let member = response.first {
                                 isFavorite = member.favourites.contains(book.id.uuidString)
                                 isInBag = member.myBag.contains(book.id.uuidString)
+                                
+                                // Check if member is disabled
+                                let memberDisabledQuery = supabaseManager.client
+                                    .from("Member")
+                                    .select("is_disabled")
+                                    .eq("id", value: userId)
+                                
+                                let memberDisabledResponse = try await memberDisabledQuery.execute()
+                                do {
+                                    if memberDisabledResponse.data != nil {
+                                        let jsonObject = try JSONSerialization.jsonObject(with: memberDisabledResponse.data) as? [[String: Any]]
+                                        if let firstMember = jsonObject?.first,
+                                           let isDisabledValue = firstMember["is_disabled"] as? Bool {
+                                            await MainActor.run {
+                                                isDisabled = isDisabledValue
+                                            }
+                                        }
+                                    }
+                                } catch {
+                                    print("Error parsing is_disabled flag: \(error)")
+                                }
                             }
                             
                             // Check if book is issued to current user
@@ -534,7 +573,8 @@ struct BookDetailView: View {
                 }
             }
         }
-        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .id(localizationManager.currentLanguage.rawValue)
         .id(refreshTrigger)
         .sheet(isPresented: $showingAddToShelf) {
             AddToShelfView(book: book, isInAnyShelf: $isInAnyShelf)
@@ -787,22 +827,3 @@ struct AddToShelfView: View {
     }
 }
 
-#Preview {
-    let sampleBook = Book(
-        id: UUID(),
-        title: "Harry Potter and the Sorcerer's Stone",
-        author: ["J.K. Rowling"],
-        genre: "Fantasy",
-        publicationDate: "1997-06-26",
-        totalCopies: 10,
-        availableCopies: 5,
-        ISBN: "9780590353427",
-        Description: "Die-hard Harry Potter audiobook fans will list the ways in which Dale differs from Fry. We love both of their performances, but some fans are firmly Team Dale or Team Fry. There's so much to love about Dale's interpretation in the U.S. edition of the audiobooks. From his voicing of a whiny Draco to the wispy, heartless tones of Voldemort, he gives each character a life of their own.",
-        shelfLocation: "A1",
-        dateAdded: "2023-03-21",
-        publisher: "Audible Verse, Inc.",
-        imageLink: "https://books.google.com/books/content?id=hjEFCAAAQBAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api"
-    )
-    return BookDetailView(book: sampleBook)
-        .environmentObject(SupabaseManager.shared)
-}

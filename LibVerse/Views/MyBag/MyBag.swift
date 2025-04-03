@@ -35,7 +35,7 @@ struct HeaderView: View {
                         .font(.custom("Charter", size: 20))
                         .bold()
                         .foregroundColor(.black)
-                        .offset(x: isEditMode ? 25 : 0) // Move right in edit mode
+                        .offset(x: isEditMode ? 25 : 0)
                     
                     Spacer()
                     
@@ -46,12 +46,12 @@ struct HeaderView: View {
                             Text(isEditMode ? "Cancel" : "Edit")
                                 .font(.custom("Charter", size: 16))
                                 .foregroundColor(.black)
-                                .offset(x: isEditMode ? -20 : 0) // Move left in edit mode
+                                .offset(x: isEditMode ? -20 : 0)
                         }
                     }
                 }
                 .padding(.horizontal, 16)
-                .animation(.easeIn, value: isEditMode) // Ensure no animation
+                .animation(.easeIn, value: isEditMode)
             )
     }
 }
@@ -59,7 +59,7 @@ struct HeaderView: View {
 struct MyBag: View {
     @StateObject var viewModel = MyBagViewModel()
     @EnvironmentObject var supabaseManager: SupabaseManager
-    @State private var isEditMode = true
+    @State private var isEditMode = false
     @State private var selectedBooks: Set<UUID> = []
     @State private var showingQRCode = false
     @State private var currentIssueId: UUID?
@@ -67,11 +67,10 @@ struct MyBag: View {
     
     var body: some View {
         ZStack {
-            // Background color
+
             Color(red: 255/255, green: 239/255, blue: 210/255)
                 .ignoresSafeArea()
             
-            // Header (fixed at top)
             VStack(spacing: 0) {
                 HeaderView(
                     title: "My Bag",
@@ -508,7 +507,7 @@ struct MultipleBooksQRView: View {
                 .select()
                 .limit(1)
             
-            let policies: [LibraryPolicy] = try await policiesQuery.execute().value
+            let policies: [LibraryPolicyNew] = try await policiesQuery.execute().value
             let returnPeriod = policies.first?.returnPeriod ?? 14 // Default to 14 days if not found
             
             let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate
@@ -638,62 +637,23 @@ struct MultipleBooksQRView: View {
 }
 
 // Add LibraryPolicy struct
-struct LibraryPolicy: Codable {
-    let id: UUID
-    let borrowingLimit: Int
-    let returnPeriod: Int
-    let fineAmount: Int
-    let lostBookFine: Int
-    let lastUpdated: Date?
-    let createdAt: Date?
+//struct LibraryPolicyNew: Codable {
+//    let id: UUID
+//    let borrowingLimit: Int
+//    let returnPeriod: Int
+//    let fineAmount: Int
+//    let lostBookFine: Int
+//    let lastUpdated: Date?
+//    let createdAt: Date?
     
-    enum CodingKeys: String, CodingKey {
-        case id
-        case borrowingLimit = "borrowing_limit"
-        case returnPeriod = "return_period"
-        case fineAmount = "fine_amount"
-        case lostBookFine = "lost_book_fine"
-        case lastUpdated = "last_updated"
-        case createdAt = "created_at"
-    }
-}
+//    enum CodingKeys: String, CodingKey {
+//        case id
+//        case borrowingLimit = "borrowing_limit"
+//        case returnPeriod = "return_period"
+//        case fineAmount = "fine_amount"
+//        case lostBookFine = "lost_book_fine"
+//        case lastUpdated = "last_updated"
+//        case createdAt = "created_at"
+//    }
+//}
 
-#Preview {
-    let mockViewModel = MyBagViewModel()
-    mockViewModel.bagBooks = [
-        Book(
-            id: UUID(),
-            title: "The Great Gatsby",
-            author: ["F. Scott Fitzgerald"],
-            genre: "Classic",
-            publicationDate: "1925",
-            totalCopies: 10,
-            availableCopies: 5,
-            ISBN: "9780743273565",
-            Description: "A story of wealth, love, and the American Dream in the 1920s.",
-            shelfLocation: "Fiction A1",
-            dateAdded: "2023-01-15",
-            publisher: "Scribner",
-            imageLink: "https://example.com/gatsby.jpg"
-        ),
-        Book(
-            id: UUID(),
-            title: "To Kill a Mockingbird",
-            author: ["Harper Lee"],
-            genre: "Fiction",
-            publicationDate: "1960",
-            totalCopies: 8,
-            availableCopies: 3,
-            ISBN: "9780061120084",
-            Description: "A powerful story of racial injustice and moral growth in the American South.",
-            shelfLocation: "Fiction B2",
-            dateAdded: "2023-02-20",
-            publisher: "J. B. Lippincott & Co.",
-            imageLink: "https://example.com/mockingbird.jpg"
-        )
-    ]
-    mockViewModel.isLoading = false
-    
-    return MyBag(viewModel: mockViewModel)
-        .environmentObject(SupabaseManager.shared)
-}
