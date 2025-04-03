@@ -45,6 +45,11 @@
 
 /* Announcements */
 "announcements" = "Announcements";
+"error_loading_announcements" = "Error loading announcements";
+"try_again" = "Try Again";
+"no_announcements_available" = "No announcements available";
+"yesterday" = "Yesterday";
+"new" = "New";
 
 /* Genres */
 "technology" = "Technology";

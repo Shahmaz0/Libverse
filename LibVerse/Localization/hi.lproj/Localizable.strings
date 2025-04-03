@@ -45,6 +45,11 @@
 
 /* Announcements */
 "announcements" = "घोषणाएँ";
+"error_loading_announcements" = "घोषणाएं लोड करने में त्रुटि";
+"try_again" = "पुनः प्रयास करें";
+"no_announcements_available" = "कोई घोषणा उपलब्ध नहीं है";
+"yesterday" = "कल";
+"new" = "नया";
 
 /* Genres */
 "technology" = "प्रौद्योगिकी";

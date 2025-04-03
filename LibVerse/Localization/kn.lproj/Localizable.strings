@@ -45,6 +45,11 @@
 
 /* Announcements */
 "announcements" = "ಪ್ರಕಟಣೆಗಳು";
+"error_loading_announcements" = "ಪ್ರಕಟಣೆಗಳನ್ನು ಲೋಡ್ ಮಾಡುವಲ್ಲಿ ದೋಷ";
+"try_again" = "ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ";
+"no_announcements_available" = "ಯಾವುದೇ ಪ್ರಕಟಣೆಗಳು ಲಭ್ಯವಿಲ್ಲ";
+"yesterday" = "ನಿನ್ನೆ";
+"new" = "ಹೊಸ";
 
 /* Genres */
 "technology" = "ತಂತ್ರಜ್ಞಾನ";

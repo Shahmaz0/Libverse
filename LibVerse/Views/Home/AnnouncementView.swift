@@ -133,6 +133,7 @@ struct Announcement: Identifiable, Codable {
 struct AnnouncementView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject private var announcementManager = AnnouncementManager.shared
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     @State private var selectedAnnouncement: Announcement?
     @State private var showDetail = false
     
@@ -152,7 +153,7 @@ struct AnnouncementView: View {
                         .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                         .padding()
                     
-                    Text("Error loading announcements")
+                    Text(localizationManager.localizedString("error_loading_announcements"))
                         .font(.headline)
                     
                     Text(error)
@@ -161,7 +162,7 @@ struct AnnouncementView: View {
                         .multilineTextAlignment(.center)
                         .padding()
                     
-                    Button("Try Again") {
+                    Button(localizationManager.localizedString("try_again")) {
                         announcementManager.fetchAnnouncements()
                     }
                     .padding()
@@ -177,7 +178,7 @@ struct AnnouncementView: View {
                         .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                         .padding()
                     
-                    Text("No announcements available")
+                    Text(localizationManager.localizedString("no_announcements_available"))
                         .font(.headline)
                 }
             } else {
@@ -197,7 +198,7 @@ struct AnnouncementView: View {
                 .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             }
         }
-        .navigationTitle("Announcements")
+        .navigationTitle(localizationManager.localizedString("announcements"))
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
@@ -207,7 +208,7 @@ struct AnnouncementView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 17, weight: .semibold))
-                        Text("Back")
+                        Text(localizationManager.localizedString("back"))
                             .fontWeight(.regular)
                     }
                     .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -222,12 +223,16 @@ struct AnnouncementView: View {
                 AnnouncementDetailView(announcement: announcement)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"))) { _ in
+            // Force view refresh when language changes
+        }
     }
 }
 
 // MARK: - Announcement Row
 struct AnnouncementRow: View {
     let announcement: Announcement
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -240,9 +245,13 @@ struct AnnouncementRow: View {
                         .lineLimit(1)
                     
                     if announcement.isNew {
-                        Circle()
-                            .fill(Color(red: 255/255, green: 111/255, blue: 45/255))
-                            .frame(width: 8, height: 8)
+                        Text(localizationManager.localizedString("new"))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .cornerRadius(4)
                     }
                 }
                 
@@ -289,7 +298,7 @@ struct AnnouncementRow: View {
         if calendar.isDateInToday(announcement.created_at) {
             formatter.dateFormat = "h:mm a"
         } else if calendar.isDateInYesterday(announcement.created_at) {
-            formatter.dateFormat = "'Yesterday'"
+            formatter.dateFormat = "'\(localizationManager.localizedString("yesterday"))'"
         } else {
             formatter.dateStyle = .medium
             formatter.timeStyle = .none
@@ -304,6 +313,7 @@ struct AnnouncementDetailView: View {
     let announcement: Announcement
     @State private var hasMarkedAsViewed = false
     @ObservedObject private var announcementManager = AnnouncementManager.shared
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         ZStack {
@@ -356,7 +366,7 @@ struct AnnouncementDetailView: View {
                     HStack(spacing: 2) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 17, weight: .semibold))
-                        Text("Back")
+                        Text(localizationManager.localizedString("back"))
                             .fontWeight(.regular)
                     }
                     .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -368,6 +378,9 @@ struct AnnouncementDetailView: View {
                 hasMarkedAsViewed = true
                 announcementManager.markAnnouncementAsRead(announcement)
             }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"))) { _ in
+            // Force view refresh when language changes
         }
     }
     
