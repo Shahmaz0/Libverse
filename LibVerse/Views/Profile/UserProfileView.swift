@@ -3,17 +3,11 @@ import Combine
 
 struct UserProfileView: View {
     @StateObject private var supabaseManager = SupabaseManager.shared
-    @State private var selectedTab = 0
     @State private var showEditProfile = false
     @State private var showGenrePreferences = false
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     @Environment(\.presentationMode) var presentationMode
-    
-    // Book data states
-    @State private var currentlyBorrowedBooks: [Book] = []
-    @State private var borrowingHistoryBooks: [Book] = []
-    @State private var isLoading = false
     
     var profile: Member? {
         supabaseManager.currentMember
@@ -22,11 +16,6 @@ struct UserProfileView: View {
     init(showMainApp: Binding<Bool>, showUserInitialView: Binding<Bool>) {
         _showMainApp = showMainApp
         _showUserInitialView = showUserInitialView
-        
-        // Customize segmented control appearance
-        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color(red: 255/255, green: 111/255, blue: 45/255))
-        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
-        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.black], for: .normal)
     }
     
     var body: some View {
@@ -44,21 +33,6 @@ struct UserProfileView: View {
                     
                     // Account Details (always visible)
                     accountDetails
-                    
-                    // Tab Picker
-                    tabPicker
-                    
-                    // Content based on selected tab
-                    if isLoading {
-                        ProgressView()
-                            .padding(.vertical, 50)
-                    } else {
-                        if selectedTab == 0 {
-                            currentlyBorrowedBooksList
-                        } else {
-                            borrowingHistoryList
-                        }
-                    }
                 }
                 .padding(.vertical)
                 .padding(.bottom, 80)
@@ -112,66 +86,6 @@ struct UserProfileView: View {
         .sheet(isPresented: $showEditProfile) {
             EditProfileView(profile: profile ?? Member(id: UUID(), email: "", firstName: "", lastName: "", enrollmentNumber: nil, fines: 0.0, borrowedBooks: []))
         }
-        .task {
-            await loadBooks()
-        }
-    }
-    
-    // MARK: - Data Loading
-    
-    private func loadBooks() async {
-        guard let userId = supabaseManager.currentUser?.id else { return }
-        
-        isLoading = true
-        
-        do {
-            // Fetch currently borrowed books (issued or overdue)
-            let activeIssues: [BookIssue] = try await supabaseManager.client
-                .from("BookIssue")
-                .select()
-                .eq("memberId", value: userId)
-                .in("status", value: ["Issued", "Overdue"])
-                .execute()
-                .value
-            
-            print("Active Issuew", activeIssues)
-            // Fetch borrowing history (returned books)
-            let returnedIssues: [BookIssue] = try await supabaseManager.client
-                .from("BookIssue")
-                .select()
-                .eq("memberId", value: userId)
-                .eq("status", value: "Returned")
-                .execute()
-                .value
-            
-            print("Returned Issues", returnedIssues)
-            
-            // Get book details
-            currentlyBorrowedBooks = try await fetchBooks(for: activeIssues)
-            borrowingHistoryBooks = try await fetchBooks(for: returnedIssues)
-            
-            print("Currently Borrowed Books", currentlyBorrowedBooks)
-            print("Borrowing history Books", borrowingHistoryBooks)
-            
-        } catch {
-            print("Error loading books: \(error)")
-        }
-        isLoading = false
-    }
-    
-    private func fetchBooks(for issues: [BookIssue]) async throws -> [Book] {
-        guard !issues.isEmpty else { return [] }
-        
-        let bookIds = issues.map { $0.bookId }
-        
-        let books: [Book] = try await supabaseManager.client
-            .from("Books")
-            .select()
-            .in("id", value: bookIds)
-            .execute()
-            .value
-        
-        return books
     }
     
     // MARK: - Subviews
@@ -252,48 +166,6 @@ struct UserProfileView: View {
         }
     }
     
-    private var currentlyBorrowedBooksList: some View {
-        Group {
-            if currentlyBorrowedBooks.isEmpty {
-                Text("No books currently borrowed")
-                    .foregroundColor(.secondary)
-                    .padding()
-            } else {
-                ForEach(currentlyBorrowedBooks) { book in
-                    BookCard(
-                        BookImage: book.imageLink ?? "",
-                        title: book.title,
-                        author: book.author.joined(separator: ", "),
-                        description: book.Description ?? "No description available",
-                        showPlusButton: false
-                    )
-                    .padding(.horizontal)
-                }
-            }
-        }
-    }
-    
-    private var borrowingHistoryList: some View {
-        Group {
-            if borrowingHistoryBooks.isEmpty {
-                Text("No borrowing history found")
-                    .foregroundColor(.secondary)
-                    .padding()
-            } else {
-                ForEach(borrowingHistoryBooks) { book in
-                    BookCard(
-                        BookImage: book.imageLink ?? "",
-                        title: book.title,
-                        author: book.author.joined(separator: ", "),
-                        description: book.Description ?? "No description available",
-                        showPlusButton: false
-                    )
-                    .padding(.horizontal)
-                }
-            }
-        }
-    }
-    
     private var accountDetails: some View {
         VStack(spacing: 20) {
             DetailRow(title: "Email", value: profile?.email ?? "N/A")
@@ -305,41 +177,6 @@ struct UserProfileView: View {
         .overlay(RoundedRectangle(cornerRadius: 0)
             .stroke(Color.black, lineWidth: 1.25))
         .padding(.horizontal)
-    }
-    
-    private var tabPicker: some View {
-        Picker("View", selection: $selectedTab) {
-            Text("Currently Borrowed").tag(0)
-            Text("Borrowing History").tag(1)
-        }
-        .pickerStyle(.segmented)
-        .padding(.horizontal)
-    }
-    
-    private var logoutButton: some View {
-        VStack {
-            Button(action: {
-                Task {
-                    try? await SupabaseManager.shared.signOut()
-                    showMainApp = false
-                    showUserInitialView = true
-                }
-            }) {
-                HStack {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                    Text("Logout")
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                .foregroundColor(.white)
-                .overlay(RoundedRectangle(cornerRadius: 0)
-                    .stroke(Color.black, lineWidth: 1.25))
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 20)
-        }
-        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
     }
     
     private var backButton: some View {
@@ -374,6 +211,7 @@ struct DetailRow: View {
         }
     }
 }
+
 
 struct EditProfileView: View {
     let profile: Member

@@ -35,7 +35,7 @@ struct HeaderView: View {
                         .font(.custom("Charter", size: 20))
                         .bold()
                         .foregroundColor(.black)
-                        .offset(x: isEditMode ? 25 : 0) // Move right in edit mode
+                        .offset(x: isEditMode ? 25 : 0)
                     
                     Spacer()
                     
@@ -46,12 +46,12 @@ struct HeaderView: View {
                             Text(isEditMode ? "Cancel" : "Edit")
                                 .font(.custom("Charter", size: 16))
                                 .foregroundColor(.black)
-                                .offset(x: isEditMode ? -20 : 0) // Move left in edit mode
+                                .offset(x: isEditMode ? -20 : 0)
                         }
                     }
                 }
                 .padding(.horizontal, 16)
-                .animation(.easeIn, value: isEditMode) // Ensure no animation
+                .animation(.easeIn, value: isEditMode)
             )
     }
 }
@@ -59,7 +59,7 @@ struct HeaderView: View {
 struct MyBag: View {
     @StateObject var viewModel = MyBagViewModel()
     @EnvironmentObject var supabaseManager: SupabaseManager
-    @State private var isEditMode = true
+    @State private var isEditMode = false
     @State private var selectedBooks: Set<UUID> = []
     @State private var showingQRCode = false
     @State private var currentIssueId: UUID?
@@ -67,11 +67,10 @@ struct MyBag: View {
     
     var body: some View {
         ZStack {
-            // Background color
+
             Color(red: 255/255, green: 239/255, blue: 210/255)
                 .ignoresSafeArea()
             
-            // Header (fixed at top)
             VStack(spacing: 0) {
                 HeaderView(
                     title: "My Bag",

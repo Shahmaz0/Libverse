@@ -16,6 +16,7 @@
        let returnDate: Date
        let actualReturnDate: Date?
        let overdueDays: Int?
+       let fine: Float?
        
        enum CodingKeys: String, CodingKey {
            case id
@@ -26,6 +27,7 @@
            case returnDate
            case actualReturnDate
            case overdueDays
+           case fine
        }
         
         init(from decoder: Decoder) throws {
@@ -57,6 +59,7 @@
             }
             
             overdueDays = try container.decodeIfPresent(Int.self, forKey: .overdueDays)
+            fine = try container.decodeIfPresent(Float.self, forKey: .fine)
         }
         
         init(bookId: UUID, memberId: UUID) {
@@ -68,6 +71,7 @@
             self.returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
             self.actualReturnDate = nil
             self.overdueDays = nil
+            self.fine = nil
         }
         
         init(id: UUID, bookId: UUID, memberId: UUID, issueStatus: IssueStatus, issueDate: Date, returnDate: Date, actualReturnDate: Date?, overdueDays: Int?) {
@@ -79,6 +83,7 @@
             self.returnDate = returnDate
             self.actualReturnDate = actualReturnDate
             self.overdueDays = overdueDays
+            self.fine = nil
         }
         
         func calculateOverdueDays() -> Int {

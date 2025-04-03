@@ -40,12 +40,13 @@ struct TabBarView: View {
                 }
                 .tag(3)
             
-//            UserProfileView(showMainApp: .constant(true), showUserInitialView: .constant(true))
-//                .tabItem {
-//                    Image(systemName: "person.crop.circle")
-//                    Text("Profile")
-//                }
-//                .tag(4)
+            MyBook()
+                .tabItem {
+                    Image(systemName: "book.pages.fill")
+                    Text("Borrowed")
+                }
+                .tag(4)
+            
         }
         .tint(Color(red:255/255, green: 111/255, blue: 45/255))
         .onAppear {

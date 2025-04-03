@@ -50,13 +50,22 @@ struct BookImageView: View {
 }
 
 struct BookCard: View {
-    let BookImage: String // This is a URL string
+    let BookImage: String
     let title: String
     let author: String
     let description: String
-    var showPlusButton: Bool = false // New parameter with default value false
-    var onPlusButtonTapped: (() -> Void)? = nil // New parameter for handling plus button tap
-    var isAdded: Bool = false // Changed to regular Bool with default value
+    var showPlusButton: Bool = false
+    var onPlusButtonTapped: (() -> Void)? = nil
+    var isAdded: Bool = false
+    var menuAction: (() -> Void)? = nil
+    var dueDate: Date? = nil
+    var fine: Float? = nil
+    
+    private var daysLeft: String {
+        guard let dueDate = dueDate else { return "" }
+        let days = Calendar.current.dateComponents([.day], from: Date(), to: dueDate).day ?? 0
+        return "\(days) days left"
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -66,7 +75,6 @@ struct BookCard: View {
                         .stroke(Color.black, lineWidth: 0.5)
                         .frame(width: 50, height: 65)
                     
-                    // Use our wrapper view
                     BookImageView(url: BookImage)
                 }
                 .frame(width: 44, height: 59)
@@ -86,31 +94,58 @@ struct BookCard: View {
                     
                     Spacer().frame(height: 6)
                     
-                    Text(description)
-                        .font(.custom("Charter", size: 12))
-                        .foregroundColor(.black)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(width: 265, alignment: .leading)
+                    if dueDate != nil {
+                        Text(daysLeft)
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.black)
+                            .lineLimit(1)
+                    } else {
+                        Text(description)
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.black)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                            .frame(width: 265, alignment: .leading)
+                    }
                 }
                 .padding(.vertical, 8)
                 
                 Spacer()
-                if showPlusButton {
-                    Button(action: {
-                        onPlusButtonTapped?()
-                    }) {
-                        Image(systemName: isAdded ? "checkmark.circle.fill" : "plus.circle")
-                            .foregroundColor(isAdded ? .green : .black)
-                            .font(.system(size: 24))
+                
+                VStack(alignment: .trailing, spacing: 4) {
+                    if let fine = fine {
+                        Text("₹\(String(format: "%.2f", fine))")
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.red)
                     }
-                    .padding(.leading, -35)
-                } else {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.black)
-                        .font(.system(size: 16))
-                        .padding(.leading, -35)
+                    
+                    if showPlusButton {
+                        Button(action: {
+                            onPlusButtonTapped?()
+                        }) {
+                            Image(systemName: isAdded ? "checkmark.circle.fill" : "plus.circle")
+                                .foregroundColor(isAdded ? .green : .black)
+                                .font(.system(size: 24))
+                        }
+                    } else if let menuAction = menuAction {
+                        Menu {
+                            Button(role: .destructive) {
+                                menuAction()
+                            } label: {
+                                Label("Mark as Lost", systemImage: "exclamationmark.triangle")
+                            }
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .foregroundColor(.black)
+                                .font(.system(size: 20))
+                        }
+                    } else {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(.black)
+                            .font(.system(size: 16))
+                    }
                 }
+                .padding(.trailing, 8)
             }
             .frame(maxWidth: .infinity, maxHeight: 90)
         }
