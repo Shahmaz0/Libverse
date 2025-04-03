@@ -1,0 +1,71 @@
+/* Profile View */
+"profile" = "प्रोफाइल";
+"currently_borrowed" = "वर्तमान में उधार ली गई पुस्तकें";
+"borrowing_history" = "उधार का इतिहास";
+"current_fines" = "वर्तमान जुर्माना";
+"library_policies" = "पुस्तकालय नियम";
+"logout" = "लॉगआउट";
+"no_books_currently_borrowed" = "वर्तमान में कोई किताब उधार नहीं ली गई है";
+"no_borrowing_history_found" = "कोई उधार इतिहास नहीं मिला";
+"email" = "ईमेल";
+"enrollment_number" = "नामांकन संख्या";
+"back" = "वापस";
+"language" = "भाषा";
+
+/* Edit Profile */
+"edit_profile" = "प्रोफाइल संपादित करें";
+"first_name" = "पहला नाम";
+"last_name" = "अंतिम नाम";
+"save_changes" = "परिवर्तन सहेजें";
+"profile_updated_successfully" = "प्रोफाइल सफलतापूर्वक अपडेट किया गया!";
+"failed_to_update_profile" = "प्रोफाइल अपडेट करने में विफल:";
+"cancel" = "रद्द करें";
+
+/* Loading */
+"loading_your_shelves" = "आपकी पुस्तक अलमारियां लोड हो रही हैं...";
+
+/* General */
+"n_a" = "उपलब्ध नहीं";
+
+/* HomeView */
+"more_to_explore" = "और भी खोजें";
+"latest_arrivals" = "नवीनतम आगमन";
+"for_you" = "आपके लिए";
+"browse_by_genre" = "शैली द्वारा ब्राउज़ करें";
+"no_new_arrivals" = "कोई नया आगमन उपलब्ध नहीं है";
+"no_recommendations" = "कोई व्यक्तिगत सिफारिशें उपलब्ध नहीं हैं";
+"see_all" = "सभी देखें";
+"no_books_available" = "कोई पुस्तकें उपलब्ध नहीं हैं";
+
+/* TabBar */
+"home" = "होम";
+"search" = "खोज";
+"my_shelf" = "मेरी शेल्फ";
+"my_bag" = "मेरा बैग";
+
+/* Announcements */
+"announcements" = "घोषणाएँ";
+
+/* Genres */
+"technology" = "प्रौद्योगिकी";
+"business" = "व्यापार";
+"reference" = "संदर्भ";
+"medicine" = "चिकित्सा";
+"mathematics" = "गणित";
+"law" = "विधि";
+"science" = "विज्ञान";
+
+/* Book Details */
+"book_details" = "पुस्तक विवरण";
+"genre" = "शैली";
+"shelf_location" = "शेल्फ स्थान";
+"available_copies" = "उपलब्ध प्रतियां";
+"publisher" = "प्रकाशक";
+"released" = "प्रकाशित";
+"by" = "द्वारा:";
+"issue_now" = "अभी जारी करें";
+"return" = "वापस करें";
+"account_disabled" = "आपका खाता वर्तमान में अक्षम है। कृपया पुस्तकालय प्रशासक से संपर्क करें।";
+"add_to_favourites" = "पसंदीदा में जोड़ें";
+"add_to_myshelf" = "मेरी शेल्फ में जोड़ें";
+"add_to_bag" = "बैग में जोड़ें"; 
