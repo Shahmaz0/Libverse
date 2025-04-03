@@ -146,7 +146,7 @@ struct SignUpView: View {
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
         .navigationDestination(isPresented: $navigateToOTP) {
-            OTPVerificationView(email: collegeEmail, password: password, showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+            OTPVerificationView(email: collegeEmail, password: password)
         }
     }
     

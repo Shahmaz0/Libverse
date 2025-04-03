@@ -136,7 +136,7 @@ struct QRCodeGeneratorView: View {
                 .select()
                 .limit(1)
             
-            let policies: [LibraryPolicy] = try await policiesQuery.execute().value
+            let policies: [LibraryPolicyNew] = try await policiesQuery.execute().value
             let returnPeriod = policies.first?.returnPeriod ?? 14 // Default to 14 days if not found
             
             let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate

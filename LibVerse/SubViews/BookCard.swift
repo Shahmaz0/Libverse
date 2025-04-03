@@ -60,6 +60,7 @@ struct BookCard: View {
     var menuAction: (() -> Void)? = nil
     var dueDate: Date? = nil
     var fine: Float? = nil
+    var isLost: Bool = false
     
     private var daysLeft: String {
         guard let dueDate = dueDate else { return "" }
@@ -94,10 +95,16 @@ struct BookCard: View {
                     
                     Spacer().frame(height: 6)
                     
-                    if dueDate != nil {
+                    if dueDate != nil && !isLost {
                         Text(daysLeft)
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.black)
+                            .lineLimit(1)
+                    } else if isLost {
+                        Text("Status: Lost")
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.red)
+                            .fontWeight(.bold)
                             .lineLimit(1)
                     } else {
                         Text(description)
@@ -127,6 +134,11 @@ struct BookCard: View {
                                 .foregroundColor(isAdded ? .green : .black)
                                 .font(.system(size: 24))
                         }
+                    } else if isLost {
+                        Text("Lost")
+                            .font(.custom("Charter", size: 14))
+                            .foregroundColor(.red)
+                            .fontWeight(.bold)
                     } else if let menuAction = menuAction {
                         Menu {
                             Button(role: .destructive) {
@@ -160,15 +172,28 @@ struct BookCard: View {
 // Preview
 struct BookCard_Previews: PreviewProvider {
     static var previews: some View {
-        BookCard(
-            BookImage: "",
-            title: "Great Gatsby",
-            author: "F. Scott Fitzgerald",
-            description: "Nick Carraway, a young man from Minnesota.",
-            showPlusButton: false,
-            onPlusButtonTapped: {},
-            isAdded: false
-        )
+        VStack(spacing: 20) {
+            // Normal book card
+            BookCard(
+                BookImage: "",
+                title: "Great Gatsby",
+                author: "F. Scott Fitzgerald",
+                description: "Nick Carraway, a young man from Minnesota.",
+                showPlusButton: false,
+                onPlusButtonTapped: {},
+                isAdded: false
+            )
+            
+            // Lost book card
+            BookCard(
+                BookImage: "",
+                title: "Moby Dick",
+                author: "Herman Melville",
+                description: "Call me Ishmael...",
+                showPlusButton: false,
+                isLost: true
+            )
+        }
         .padding()
     }
 }

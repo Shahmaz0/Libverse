@@ -115,7 +115,7 @@ struct LogInView: View {
                 }
             }
             .navigationDestination(isPresented: $showOTPView) {
-                OTPVerificationView(email: collegeEmail, password: password, showMainApp: $showMainApp, showUserInitialView: $showUserInitialView)
+                OTPVerificationView(email: collegeEmail, password: password)
             }
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))

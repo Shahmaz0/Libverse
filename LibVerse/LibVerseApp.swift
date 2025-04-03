@@ -14,7 +14,7 @@ struct LibVerseApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView(appState: appState)
+            ContentView()
                 .id(localizationManager.currentLanguage.rawValue) // Force view refresh when language changes
                 .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"))) { _ in
                     // This will force the ContentView to refresh when language changes

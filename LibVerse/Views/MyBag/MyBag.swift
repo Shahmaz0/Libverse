@@ -507,7 +507,7 @@ struct MultipleBooksQRView: View {
                 .select()
                 .limit(1)
             
-            let policies: [LibraryPolicy] = try await policiesQuery.execute().value
+            let policies: [LibraryPolicyNew] = try await policiesQuery.execute().value
             let returnPeriod = policies.first?.returnPeriod ?? 14 // Default to 14 days if not found
             
             let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate
@@ -637,23 +637,23 @@ struct MultipleBooksQRView: View {
 }
 
 // Add LibraryPolicy struct
-struct LibraryPolicy: Codable {
-    let id: UUID
-    let borrowingLimit: Int
-    let returnPeriod: Int
-    let fineAmount: Int
-    let lostBookFine: Int
-    let lastUpdated: Date?
-    let createdAt: Date?
+//struct LibraryPolicyNew: Codable {
+//    let id: UUID
+//    let borrowingLimit: Int
+//    let returnPeriod: Int
+//    let fineAmount: Int
+//    let lostBookFine: Int
+//    let lastUpdated: Date?
+//    let createdAt: Date?
     
-    enum CodingKeys: String, CodingKey {
-        case id
-        case borrowingLimit = "borrowing_limit"
-        case returnPeriod = "return_period"
-        case fineAmount = "fine_amount"
-        case lostBookFine = "lost_book_fine"
-        case lastUpdated = "last_updated"
-        case createdAt = "created_at"
-    }
-}
+//    enum CodingKeys: String, CodingKey {
+//        case id
+//        case borrowingLimit = "borrowing_limit"
+//        case returnPeriod = "return_period"
+//        case fineAmount = "fine_amount"
+//        case lostBookFine = "lost_book_fine"
+//        case lastUpdated = "last_updated"
+//        case createdAt = "created_at"
+//    }
+//}
 

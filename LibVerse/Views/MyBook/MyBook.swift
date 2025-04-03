@@ -203,7 +203,7 @@ struct MyBook: View {
                 .update(["is_lost": true])
                 .eq("memberId", value: userId)
                 .eq("bookId", value: book.id)
-                .eq("status", value: "Issued")
+                .in("status", values: ["Issued", "Overdue"])
                 .execute()
             
             // Refresh the books list
@@ -229,18 +229,21 @@ struct MyBook: View {
                     VStack(spacing: 16) {
                         ForEach(currentlyBorrowedBooks) { book in
                             let issue = bookIssues.first { $0.bookId == book.id }
+                            let isLost = issue?.isLost ?? false
+                            
                             BookCard(
                                 BookImage: book.imageLink ?? "",
                                 title: book.title,
                                 author: book.author.joined(separator: ", "),
                                 description: book.Description ?? "No description available",
                                 showPlusButton: false,
-                                menuAction: {
+                                menuAction: isLost ? nil : {
                                     selectedBook = book
                                     showingLostAlert = true
                                 },
                                 dueDate: issue?.returnDate,
-                                fine: issue?.fine
+                                fine: issue?.fine,
+                                isLost: isLost
                             )
                         }
                     }
