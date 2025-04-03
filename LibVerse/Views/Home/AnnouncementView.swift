@@ -81,14 +81,19 @@ class AnnouncementManager: ObservableObject {
     
     func markAnnouncementAsRead(_ announcement: Announcement) {
         if let index = announcements.firstIndex(where: { $0.id == announcement.id }) {
-            UserDefaults.standard.set(true, forKey: "announcement_viewed_\(announcement.id.uuidString)")
+            // Store the viewed state in UserDefaults with a unique key for each announcement
+            let key = "announcement_viewed_\(announcement.id.uuidString)"
+            UserDefaults.standard.set(true, forKey: key)
+            UserDefaults.standard.synchronize() // Force immediate save
+            
             currentlyViewedAnnouncement = announcement.id
             calculateUnreadCount()
         }
     }
     
     func isAnnouncementViewed(_ announcement: Announcement) -> Bool {
-        return UserDefaults.standard.bool(forKey: "announcement_viewed_\(announcement.id.uuidString)")
+        let key = "announcement_viewed_\(announcement.id.uuidString)"
+        return UserDefaults.standard.bool(forKey: key)
     }
 }
 
