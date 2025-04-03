@@ -7,6 +7,7 @@ struct QRCodeGeneratorView: View {
     let book: Book
     let memberId: String
     @Environment(\.presentationMode) var presentationMode
+    @EnvironmentObject var supabaseManager: SupabaseManager
     
     @State private var timeRemaining: TimeInterval = 300 // 5 minutes in seconds
     @State private var qrImage: UIImage?
@@ -101,14 +102,18 @@ struct QRCodeGeneratorView: View {
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .onAppear {
-            qrImage = generateQRCode()
+            Task {
+                qrImage = await generateQRCode()
+            }
         }
         .onReceive(timer) { _ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
                 if timeRemaining == 0 {
                     isExpired = true
-                    qrImage = generateQRCode()
+                    Task {
+                        qrImage = await generateQRCode()
+                    }
                 }
             }
         }
@@ -120,74 +125,96 @@ struct QRCodeGeneratorView: View {
         return String(format: "%02d:%02d", minutes, seconds)
     }
     
-    func generateQRCode() -> UIImage {
+    func generateQRCode() async -> UIImage {
         let expirationDate = Date().addingTimeInterval(5 * 60)
+        let issueDate = Date()
         
-        // Create a new BookIssue instance
-        let bookIssue = BookIssue(
-            bookId: book.id,
-            memberId: UUID(uuidString: memberId) ?? UUID()
-        )
-        
-        // Convert BookIssue to JSON data
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        
-        let qrData = """
-        {
-            "bookIssue": \(String(data: try! encoder.encode(bookIssue), encoding: .utf8)!),
-            "expirationDate": "\(expirationDate.timeIntervalSince1970)",
-            "timestamp": "\(Date().timeIntervalSince1970)",
-            "isValid": \(!isExpired)
-        }
-        """
-        
-        let data = Data(qrData.utf8)
-        
-        filter.setValue(data, forKey: "inputMessage")
-        filter.setValue("H", forKey: "inputCorrectionLevel") // Using high error correction for logo overlay
-        
-        if let outputImage = filter.outputImage {
-            // Scale up the QR code to desired size
-            let transform = CGAffineTransform(scaleX: 10, y: 10)
-            let scaledQRImage = outputImage.transformed(by: transform)
+        // Fetch return period from library_policies
+        do {
+            let policiesQuery = supabaseManager.client
+                .from("library_policies")
+                .select()
+                .limit(1)
             
-            if let qrCGImage = context.createCGImage(scaledQRImage, from: scaledQRImage.extent) {
-                let size = CGSize(width: qrCGImage.width, height: qrCGImage.height)
-                UIGraphicsBeginImageContextWithOptions(size, false, 0)
+            let policies: [LibraryPolicyNew] = try await policiesQuery.execute().value
+            let returnPeriod = policies.first?.returnPeriod ?? 14 // Default to 14 days if not found
+            
+            let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate
+            
+            // Create a new BookIssue instance
+            let bookIssue = BookIssue(
+                id: UUID(),
+                bookId: book.id,
+                memberId: UUID(uuidString: memberId) ?? UUID(),
+                issueStatus: .pending,
+                issueDate: issueDate,
+                returnDate: returnDate,
+                actualReturnDate: nil,
+                overdueDays: nil
+            )
+            
+            // Convert BookIssue to JSON data
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            
+            let qrData = """
+            {
+                "bookIssue": \(String(data: try! encoder.encode(bookIssue), encoding: .utf8)!),
+                "expirationDate": "\(expirationDate.timeIntervalSince1970)",
+                "timestamp": "\(Date().timeIntervalSince1970)",
+                "isValid": \(!isExpired)
+            }
+            """
+            
+            let data = Data(qrData.utf8)
+            
+            filter.setValue(data, forKey: "inputMessage")
+            filter.setValue("H", forKey: "inputCorrectionLevel") // Using high error correction for logo overlay
+            
+            if let outputImage = filter.outputImage {
+                // Scale up the QR code to desired size
+                let transform = CGAffineTransform(scaleX: 10, y: 10)
+                let scaledQRImage = outputImage.transformed(by: transform)
                 
-                let qrUIImage = UIImage(cgImage: qrCGImage)
-                qrUIImage.draw(in: CGRect(origin: .zero, size: size))
-                
-                // Add logo in center
-                if let logoImage = UIImage(named: "QRlogo") {
-                    let logoSize = CGSize(width: size.width * 0.25, height: size.height * 0.25)
-                    let logoX = (size.width - logoSize.width) / 2
-                    let logoY = (size.height - logoSize.height) / 2
-                    let logoRect = CGRect(x: logoX, y: logoY, width: logoSize.width, height: logoSize.height)
+                if let qrCGImage = context.createCGImage(scaledQRImage, from: scaledQRImage.extent) {
+                    let size = CGSize(width: qrCGImage.width, height: qrCGImage.height)
+                    UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
                     
-                    // Create circular mask for logo
-                    UIGraphicsBeginImageContextWithOptions(logoSize, false, 0)
-                    let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: logoSize))
-                    circlePath.addClip()
+                    let qrUIImage = UIImage(cgImage: qrCGImage)
+                    qrUIImage.draw(in: CGRect(origin: .zero, size: size))
                     
-                    // Draw logo with white background
-                    UIColor.white.setFill()
-                    UIBezierPath(rect: CGRect(origin: .zero, size: logoSize)).fill()
-                    logoImage.draw(in: CGRect(origin: .zero, size: logoSize))
+                    // Add logo in center
+                    if let logoImage = UIImage(named: "QRlogo") {
+                        let logoSize = CGSize(width: size.width * 0.25, height: size.height * 0.25)
+                        let logoX = (size.width - logoSize.width) / 2
+                        let logoY = (size.height - logoSize.height) / 2
+                        let logoRect = CGRect(x: logoX, y: logoY, width: logoSize.width, height: logoSize.height)
+                        
+                        // Create circular mask for logo
+                        UIGraphicsBeginImageContextWithOptions(logoSize, false, 1.0)
+                        let circlePath = UIBezierPath(ovalIn: CGRect(origin: .zero, size: logoSize))
+                        circlePath.addClip()
+                        
+                        // Draw logo with white background
+                        UIColor.white.setFill()
+                        UIBezierPath(rect: CGRect(origin: .zero, size: logoSize)).fill()
+                        logoImage.draw(in: CGRect(origin: .zero, size: logoSize))
+                        
+                        let circularLogo = UIGraphicsGetImageFromCurrentImageContext()
+                        UIGraphicsEndImageContext()
+                        
+                        // Draw circular logo on QR code
+                        circularLogo?.draw(in: logoRect)
+                    }
                     
-                    let circularLogo = UIGraphicsGetImageFromCurrentImageContext()
+                    let finalImage = UIGraphicsGetImageFromCurrentImageContext()
                     UIGraphicsEndImageContext()
                     
-                    // Draw circular logo on QR code
-                    circularLogo?.draw(in: logoRect)
+                    return finalImage ?? UIImage(systemName: "xmark.circle") ?? UIImage()
                 }
-                
-                let finalImage = UIGraphicsGetImageFromCurrentImageContext()
-                UIGraphicsEndImageContext()
-                
-                return finalImage ?? UIImage(systemName: "xmark.circle") ?? UIImage()
             }
+        } catch {
+            print("Error fetching library policies: \(error)")
         }
         
         return UIImage(systemName: "xmark.circle") ?? UIImage()
