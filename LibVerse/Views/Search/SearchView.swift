@@ -208,11 +208,11 @@ struct SearchView: View {
                     HStack {
                         Spacer()
                         NavigationLink(destination: RoadMapView()) {
-                            Image(systemName: "map")
+                            Image(systemName: "signpost.right.circle.fill")
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 55, height: 55)
-                                .background(Color(hex: "76A2F9"))
+                                .background(Color(hex: "EE7741"))
                                 .clipShape(Circle())
                                 .shadow(radius: 4)
                         }
