@@ -9,6 +9,7 @@ class AnnouncementManager: ObservableObject {
     @Published var announcements: [Announcement] = []
     @Published var isLoading: Bool = false
     @Published var error: String?
+    @Published var currentlyViewedAnnouncement: UUID?
     
     // Constants for announcement types
     private let typeAll = "All"
@@ -81,6 +82,7 @@ class AnnouncementManager: ObservableObject {
     func markAnnouncementAsRead(_ announcement: Announcement) {
         if let index = announcements.firstIndex(where: { $0.id == announcement.id }) {
             UserDefaults.standard.set(true, forKey: "announcement_viewed_\(announcement.id.uuidString)")
+            currentlyViewedAnnouncement = announcement.id
             calculateUnreadCount()
         }
     }
@@ -126,10 +128,13 @@ struct Announcement: Identifiable, Codable {
 struct AnnouncementView: View {
     @Environment(\.presentationMode) var presentationMode
     @ObservedObject private var announcementManager = AnnouncementManager.shared
+    @State private var selectedAnnouncement: Announcement?
+    @State private var showDetail = false
     
     var body: some View {
         ZStack {
-            Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all)
+            Color(red: 255/255, green: 239/255, blue: 210/255)
+                .edgesIgnoringSafeArea(.all)
             
             if announcementManager.isLoading {
                 ProgressView()
@@ -171,15 +176,20 @@ struct AnnouncementView: View {
                         .font(.headline)
                 }
             } else {
-                List {
-                    ForEach(announcementManager.announcements.filter { $0.is_active && !$0.is_archived }) { announcement in
-                        NavigationLink(destination: AnnouncementDetailView(announcement: announcement)) {
-                            AnnouncementRow(announcement: announcement)
+                ScrollView(showsIndicators: false) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(announcementManager.announcements.filter { $0.is_active && !$0.is_archived }) { announcement in
+                            Button(action: {
+                                selectedAnnouncement = announcement
+                                showDetail = true
+                            }) {
+                                AnnouncementRow(announcement: announcement)
+                            }
                         }
-                        .listRowBackground(Color(red: 255/255, green: 239/255, blue: 210/255))
                     }
+                    .padding(.vertical, 8)
                 }
-                .scrollContentBackground(.hidden)
+                .background(Color(red: 255/255, green: 239/255, blue: 210/255))
             }
         }
         .navigationTitle("Announcements")
@@ -200,8 +210,12 @@ struct AnnouncementView: View {
             }
         }
         .onAppear {
-            // Fetch announcements when view appears
             announcementManager.fetchAnnouncements()
+        }
+        .sheet(item: $selectedAnnouncement) { announcement in
+            NavigationView {
+                AnnouncementDetailView(announcement: announcement)
+            }
         }
     }
 }
@@ -211,43 +225,70 @@ struct AnnouncementRow: View {
     let announcement: Announcement
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(announcement.title)
-                    .font(.headline)
-                    .foregroundColor(.black)
+        VStack(alignment: .leading, spacing: 6) {
+            // Title and arrow row
+            HStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(announcement.title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                    
+                    if announcement.isNew {
+                        Circle()
+                            .fill(Color(red: 255/255, green: 111/255, blue: 45/255))
+                            .frame(width: 8, height: 8)
+                    }
+                }
                 
                 Spacer()
                 
-                if announcement.isNew {
-                    Text("NEW")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                        .cornerRadius(4)
-                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
             }
             
+            // Content preview
             Text(announcement.content)
-                .font(.body)
+                .font(.system(size: 15))
                 .foregroundColor(.gray)
-                .lineLimit(3)
+                .lineLimit(1)
             
-            Text(dateFormatter.string(from: announcement.created_at))
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .padding(.top, 4)
+            // Date at bottom
+            HStack {
+                Spacer()
+                Text(timeFormatter.string(from: announcement.created_at))
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
+            }
         }
         .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 0)
+                .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color(red: 255/255, green: 111/255, blue: 45/255).opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 4)
     }
     
-    private var dateFormatter: DateFormatter {
+    private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        let calendar = Calendar.current
+        
+        if calendar.isDateInToday(announcement.created_at) {
+            formatter.dateFormat = "h:mm a"
+        } else if calendar.isDateInYesterday(announcement.created_at) {
+            formatter.dateFormat = "'Yesterday'"
+        } else {
+            formatter.dateStyle = .medium
+            formatter.timeStyle = .none
+        }
         return formatter
     }
 }
@@ -260,55 +301,51 @@ struct AnnouncementDetailView: View {
     @ObservedObject private var announcementManager = AnnouncementManager.shared
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Header with title and date
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
+        ZStack {
+            Color(red: 255/255, green: 239/255, blue: 210/255)
+                .edgesIgnoringSafeArea(.all)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    // Header with title and date in same row
+                    HStack(alignment: .center, spacing: 8) {
                         Text(announcement.title)
-                            .font(.title2)
+                            .font(.title3)
                             .fontWeight(.bold)
+                            .lineLimit(2)
                         
                         Spacer()
                         
                         Text(dateFormatter.string(from: announcement.created_at))
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        
-                        if !hasMarkedAsViewed && announcement.isNew {
-                            Text("NEW")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                                .cornerRadius(4)
-                        }
+                            .foregroundColor(.gray)
                     }
+                    .padding(.bottom, 8)
+                    
+                    // Divider
+                    Rectangle()
+                        .fill(Color(red: 255/255, green: 111/255, blue: 45/255))
+                        .frame(height: 2)
+                    
+                    // Content
+                    Text(announcement.content)
+                        .font(.body)
+                        .foregroundColor(.black)
+                        .lineSpacing(6)
                 }
-                .padding(.bottom, 8)
-                
-                // Divider
-                Rectangle()
-                    .fill(Color(red: 255/255, green: 111/255, blue: 45/255))
-                    .frame(height: 2)
-                
-                // Full content
-                Text(announcement.content)
-                    .font(.body)
-                    .foregroundColor(.black)
-                    .lineSpacing(6)
+                .padding()
             }
-            .padding()
+            .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         }
-        .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-        .navigationTitle("Announcement Details")
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button(action: {
+                    if !hasMarkedAsViewed && announcement.isNew {
+                        hasMarkedAsViewed = true
+                        announcementManager.markAnnouncementAsRead(announcement)
+                    }
                     presentationMode.wrappedValue.dismiss()
                 }) {
                     HStack(spacing: 2) {
@@ -335,13 +372,6 @@ struct AnnouncementDetailView: View {
         formatter.timeStyle = .none
         return formatter
     }
-    
-    private var shortDateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter
-    }
 }
 
 // MARK: - Preview
@@ -349,4 +379,4 @@ struct AnnouncementDetailView: View {
     NavigationView {
         AnnouncementView()
     }
-} 
+}
