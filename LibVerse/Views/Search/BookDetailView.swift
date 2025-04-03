@@ -39,6 +39,7 @@ struct BookDetailView: View {
     @State private var isInAnyShelf: Bool = false
     @State private var isDisabled: Bool = false
     @EnvironmentObject var supabaseManager: SupabaseManager
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     
     var body: some View {
         VStack {
@@ -107,7 +108,7 @@ struct BookDetailView: View {
                 
             }
             .overlay(
-                Text("Book Details")
+                Text(LocalizationManager.shared.localizedString("book_details"))
                     .font(.custom("Charter", size: 20))
                     .bold()
                     .foregroundColor(.black),
@@ -158,15 +159,21 @@ struct BookDetailView: View {
                         .padding(.leading, 5)
                         
                         VStack(alignment: .leading, spacing: 10) {
-                            Text(book.title)
+                            TranslatedBookTitle(book.title)
                                 .font(.custom("Charter", size: 15))
                                 .fontWeight(.semibold)
                                 .foregroundColor(.black)
                                 .fixedSize(horizontal: false, vertical: true)
                             
-                            Text("By: \(book.author.joined(separator: ", "))")
-                                .font(.custom("Charter", size: 13))
-                                .foregroundColor(.gray)
+                            HStack(spacing: 0) {
+                                Text(LocalizationManager.shared.localizedString("by") + ": ")
+                                    .font(.custom("Charter", size: 13))
+                                    .foregroundColor(.gray)
+                                
+                                Text(LocalizationManager.shared.translateAuthor(book.author.joined(separator: ", ")))
+                                    .font(.custom("Charter", size: 13))
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -182,7 +189,7 @@ struct BookDetailView: View {
                             showingQRCode = true
                         }
                     }) {
-                        Text(isBookIssued ? "Return" : "Issue Now")
+                        Text(isBookIssued ? LocalizationManager.shared.localizedString("return") : LocalizationManager.shared.localizedString("issue_now"))
                             .frame(width: 325, height: 20)
                             .padding()
                             .background(isBookIssued ? Color.green : Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -210,7 +217,7 @@ struct BookDetailView: View {
                     }
                     
                     if isDisabled && !isBookIssued {
-                        Text("Your account is currently disabled. Please contact the library admin.")
+                        Text(LocalizationManager.shared.localizedString("account_disabled"))
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.red)
                             .padding(.horizontal)
@@ -274,7 +281,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to Cart")
+                                    Text(LocalizationManager.shared.localizedString("add_to_bag"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -351,7 +358,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to favourites")
+                                    Text(LocalizationManager.shared.localizedString("add_to_favourites"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -399,7 +406,7 @@ struct BookDetailView: View {
                                     }
                                     .padding(.horizontal)
                                     
-                                    Text("Add to myShelf")
+                                    Text(LocalizationManager.shared.localizedString("add_to_myshelf"))
                                         .font(.custom("Charter", size: 10))
                                 },
                                 alignment: .center
@@ -410,7 +417,7 @@ struct BookDetailView: View {
                     
                     VStack(alignment: .leading, spacing: 10) {
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Genre")
+                            Text(LocalizationManager.shared.localizedString("genre"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -422,7 +429,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Shelf Location")
+                            Text(LocalizationManager.shared.localizedString("shelf_location"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -434,7 +441,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Available Copies")
+                            Text(LocalizationManager.shared.localizedString("available_copies"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -446,7 +453,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Publisher")
+                            Text(LocalizationManager.shared.localizedString("publisher"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -458,7 +465,7 @@ struct BookDetailView: View {
                         }
                         
                         HStack(alignment: .top, spacing: 10) {
-                            Text("Released")
+                            Text(LocalizationManager.shared.localizedString("released"))
                                 .font(.custom("Charter", size: 14))
                                 .foregroundColor(.black)
                                 .frame(width: 120, alignment: .leading)
@@ -483,7 +490,7 @@ struct BookDetailView: View {
                             alignment: .top
                         )
                     
-                    Text(book.Description ?? "No description available")
+                    TranslatedBookDescription(book.Description ?? "No description available")
                         .font(.custom("Charter", size: 13))
                         .foregroundColor(.black)
                         .lineLimit(nil)
@@ -566,7 +573,8 @@ struct BookDetailView: View {
                 }
             }
         }
-        .background(Color(red: 255/255, green: 239/255, blue: 210/255))
+        .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
+        .id(localizationManager.currentLanguage.rawValue)
         .id(refreshTrigger)
         .sheet(isPresented: $showingAddToShelf) {
             AddToShelfView(book: book, isInAnyShelf: $isInAnyShelf)
