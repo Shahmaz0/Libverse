@@ -17,6 +17,8 @@ struct OTPVerificationView: View {
     @State private var timer: Timer?
     @State private var isResendEnabled = false
     @Environment(\.dismiss) private var dismiss
+    @AppStorage("isAuthenticated") private var isAuthenticated: Bool = false
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
         
     var otp: String {
         otpFields.joined()
@@ -202,6 +204,9 @@ struct OTPVerificationView: View {
                                 // Post notification that user is logged in
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
                                 
+                                // Set isAuthenticated for persistent login
+                                isAuthenticated = true
+                                
                                 // Check if user has completed genre onboarding
                                 if !UserDefaults.standard.bool(forKey: "hasCompletedGenreOnboarding") {
                                     // We'll show the genre onboarding after navigation
@@ -236,6 +241,10 @@ struct OTPVerificationView: View {
                                 }
                                 // Post notification that user is logged in
                                 NotificationCenter.default.post(name: Notification.Name("userLoggedIn"), object: nil)
+                                
+                                // Set isAuthenticated for persistent login
+                                isAuthenticated = true
+                                
                                 navigateToHome = true
                             case .failure(let error):
                                 errorMessage = error.localizedDescription
