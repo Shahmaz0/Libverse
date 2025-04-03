@@ -142,15 +142,9 @@ struct QRCodeGeneratorView: View {
             let returnDate = Calendar.current.date(byAdding: .day, value: returnPeriod, to: issueDate) ?? issueDate
             
             // Create a new BookIssue instance
-            let bookIssue = BookIssue(
-                id: UUID(),
+            var bookIssue = BookIssue(
                 bookId: book.id,
-                memberId: UUID(uuidString: memberId) ?? UUID(),
-                issueStatus: .pending,
-                issueDate: issueDate,
-                returnDate: returnDate,
-                actualReturnDate: nil,
-                overdueDays: nil
+                memberId: UUID(uuidString: memberId) ?? UUID()
             )
             
             // Convert BookIssue to JSON data

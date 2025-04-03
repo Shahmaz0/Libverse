@@ -35,19 +35,8 @@ struct RefreshableScrollView<Content: View>: View {
         ScrollView {
             ZStack(alignment: .top) {
                 MovingView(action: action, isRefreshing: $isRefreshing)
-                    .opacity(isRefreshing ? 0 : 1)
                 
                 VStack {
-                    if isRefreshing {
-                        VStack {
-                            Spacer().frame(height: 16)
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                                .scaleEffect(1.3)
-                                .tint(Color(hex: "875232"))
-                            Spacer().frame(height: 16)
-                        }
-                    }
                     content
                 }
             }

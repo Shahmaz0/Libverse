@@ -61,13 +61,30 @@ struct BookCard: View {
     var deleteAction: (() -> Void)? = nil
     var showDeleteAction: Bool = false
     var dueDate: Date? = nil
+    var returnDate: Date? = nil
     var fine: Float? = nil
     var isLost: Bool = false
     
-    private var daysLeft: String {
+    private var formattedDueDate: String {
         guard let dueDate = dueDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        let dueDateStr = formatter.string(from: dueDate)
         let days = Calendar.current.dateComponents([.day], from: Date(), to: dueDate).day ?? 0
-        return "\(days) days left"
+        if days < 0 {
+            return "Overdue by \(abs(days)) days, DueDate: \(dueDateStr)"
+        } else if days == 0 {
+            return "Due today, DueDate: \(dueDateStr)"
+        } else {
+            return "\(days) days left to DueDate: \(dueDateStr)"
+        }
+    }
+    
+    private var formattedReturnDate: String {
+        guard let returnDate = returnDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        return "Returned on: \(formatter.string(from: returnDate))"
     }
     
     var body: some View {
@@ -98,7 +115,7 @@ struct BookCard: View {
                     Spacer().frame(height: 6)
                     
                     if dueDate != nil && !isLost {
-                        Text(daysLeft)
+                        Text(formattedDueDate)
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.black)
                             .lineLimit(1)
@@ -107,6 +124,11 @@ struct BookCard: View {
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.red)
                             .fontWeight(.bold)
+                            .lineLimit(1)
+                    } else if returnDate != nil {
+                        Text(formattedReturnDate)
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.green)
                             .lineLimit(1)
                     } else {
                         Text(description)
@@ -126,6 +148,7 @@ struct BookCard: View {
                         Text("₹\(String(format: "%.2f", fine))")
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.red)
+                            .frame(minWidth: 60, alignment: .trailing)
                     }
                     
                     if showPlusButton {
@@ -137,12 +160,6 @@ struct BookCard: View {
                                 .font(.system(size: 24))
                         }
                         .frame(width: 24, height: 24)
-                    } else if isLost {
-                        Text("Lost")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.red)
-                            .fontWeight(.bold)
-                            .frame(width: 24, alignment: .center)
                     } else if let menuAction = menuAction {
                         Menu {
                             Button(role: .destructive) {
@@ -170,8 +187,8 @@ struct BookCard: View {
                             .frame(width: 24, height: 24)
                     }
                 }
-                .frame(width: 40)
-                .padding(.trailing, 20)
+                .frame(width: 60)
+                .padding(.trailing, 16)
             }
             .frame(maxWidth: .infinity, maxHeight: 90)
         }
