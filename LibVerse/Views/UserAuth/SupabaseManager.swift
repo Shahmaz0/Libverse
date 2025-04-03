@@ -254,14 +254,8 @@ class SupabaseManager: ObservableObject {
             self.currentMember = nil
         }
         
-        UserDefaults.standard.removeObject(forKey: "pendingLoginEmail")
-        UserDefaults.standard.removeObject(forKey: "pendingLoginPassword")
-        UserDefaults.standard.removeObject(forKey: "pendingSignupEmail")
-        UserDefaults.standard.removeObject(forKey: "pendingSignupPassword")
-        UserDefaults.standard.removeObject(forKey: "pendingSignupFirstName")
-        UserDefaults.standard.removeObject(forKey: "pendingSignupLastName")
-        UserDefaults.standard.removeObject(forKey: "resetEmail")
-        UserDefaults.standard.removeObject(forKey: "resetOTP")
+        // Clear all credentials and user data
+        clearCredentials()
         
         NotificationCenter.default.post(name: NSNotification.Name("UserDidLogout"), object: nil)
         print("✅ Sign out successful")
@@ -840,5 +834,32 @@ class SupabaseManager: ObservableObject {
         
         print("✅ Found \(response.count) general recommendations")
         return response
+    }
+    
+    // MARK: - Authentication Utilities
+    
+    func clearCredentials() {
+        print("🔄 Clearing all credentials and user data")
+        
+        // Clear all session/auth related data
+        UserDefaults.standard.removeObject(forKey: "pendingLoginEmail")
+        UserDefaults.standard.removeObject(forKey: "pendingLoginPassword")
+        UserDefaults.standard.removeObject(forKey: "pendingSignupEmail")
+        UserDefaults.standard.removeObject(forKey: "pendingSignupPassword")
+        UserDefaults.standard.removeObject(forKey: "pendingSignupFirstName")
+        UserDefaults.standard.removeObject(forKey: "pendingSignupLastName")
+        UserDefaults.standard.removeObject(forKey: "resetEmail")
+        UserDefaults.standard.removeObject(forKey: "resetOTP")
+        UserDefaults.standard.removeObject(forKey: "userEmail")
+        
+        // Clear authentication status
+        UserDefaults.standard.set(false, forKey: "isAuthenticated")
+        UserDefaults.standard.set(false, forKey: "hasCompletedOnboarding")
+        UserDefaults.standard.set(false, forKey: "hasCompletedGenreOnboarding")
+        
+        // Clear user preferences
+        UserPreferences.shared.clearAllPreferences()
+        
+        print("✅ All credentials and user data cleared")
     }
 }
