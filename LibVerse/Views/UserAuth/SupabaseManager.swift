@@ -32,6 +32,7 @@ struct Member: Codable {
     var borrowedBooks: [BorrowedBook]
     var borrowingHistory: [BookIssue]?
     var selectedGenres: [String]?
+    var roadmaps: [String: Any]?
     
     init(
         id: UUID? = nil,
@@ -47,7 +48,8 @@ struct Member: Codable {
         fines: Double = 0.0,
         borrowedBooks: [BorrowedBook] = [],
         borrowingHistory: [BookIssue]? = nil,
-        selectedGenres: [String]? = nil
+        selectedGenres: [String]? = nil,
+        roadmaps: [String: Any]? = nil
     ) {
         self.id = id
         self.email = email
@@ -63,12 +65,13 @@ struct Member: Codable {
         self.borrowedBooks = borrowedBooks
         self.borrowingHistory = borrowingHistory
         self.selectedGenres = selectedGenres
+        self.roadmaps = roadmaps
     }
     
     enum CodingKeys: String, CodingKey {
         case id, email, password, firstName, lastName, favourites,
              myBag, shelves, created_at, enrollmentNumber, fines,
-             borrowedBooks, borrowingHistory, selectedGenres
+             borrowedBooks, borrowingHistory, selectedGenres, roadmaps
     }
     
     init(from decoder: Decoder) throws {
@@ -103,6 +106,21 @@ struct Member: Codable {
         } else {
             shelves = ["Favorites": []]
         }
+        
+        // Handle roadmaps decoding
+        if let roadmapsString = try? container.decodeIfPresent(String.self, forKey: .roadmaps),
+           let data = roadmapsString.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            roadmaps = json
+        } else if let anyValue = try? container.decodeIfPresent(AnyDecodable.self, forKey: .roadmaps) {
+            if let dict = anyValue.value as? [String: Any] {
+                roadmaps = dict
+            } else {
+                roadmaps = nil
+            }
+        } else {
+            roadmaps = nil
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -123,6 +141,16 @@ struct Member: Codable {
         
         if let shelves = shelves {
             try container.encode(shelves, forKey: .shelves)
+        }
+        
+        // Handle roadmaps encoding
+        if let roadmapsDict = roadmaps {
+            if let jsonData = try? JSONSerialization.data(withJSONObject: roadmapsDict),
+               let jsonString = String(data: jsonData, encoding: .utf8) {
+                try container.encode(jsonString, forKey: .roadmaps)
+            } else {
+                try container.encode(AnyCodable(roadmapsDict), forKey: .roadmaps)
+            }
         }
     }
 }
@@ -338,7 +366,8 @@ class SupabaseManager: ObservableObject {
             "myBag": AnyCodable([]),
             "shelves": AnyCodable(["Favorites": []]),
             "fine": AnyCodable(0.0),
-            "selectedGenres": AnyCodable([])
+            "selectedGenres": AnyCodable([]),
+            "roadmaps": AnyCodable("{}")
         ]
         
         do {
@@ -438,7 +467,8 @@ class SupabaseManager: ObservableObject {
                 lastName: "",
                 favourites: [],
                 myBag: addToBag ? [bookId.uuidString] : [],
-                shelves: ["Favorites": []]
+                shelves: ["Favorites": []],
+                roadmaps: nil
             )
             
             try await client.from("Member").insert(newMember).execute()
@@ -481,7 +511,8 @@ class SupabaseManager: ObservableObject {
                 favourites: isFavourite ? [bookId.uuidString] : [],
                 myBag: [],
                 shelves: ["Favorites": []],
-                created_at: Date()
+                created_at: Date(),
+                roadmaps: nil
             )
             
             try await client.from("Member").insert(newMember).execute()
@@ -541,7 +572,8 @@ class SupabaseManager: ObservableObject {
                 favourites: [],
                 myBag: [],
                 shelves: initialShelves,
-                created_at: Date()
+                created_at: Date(),
+                roadmaps: nil
             )
             
             try await client.from("Member").insert(newMember).execute()
@@ -613,7 +645,8 @@ class SupabaseManager: ObservableObject {
                 favourites: [],
                 myBag: [],
                 shelves: initialShelves,
-                created_at: Date()
+                created_at: Date(),
+                roadmaps: nil
             )
             
             try await client.from("Member").insert(newMember).execute()

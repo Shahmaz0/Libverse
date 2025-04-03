@@ -5,6 +5,7 @@
 //  Created by Astha Arora on 20/03/25.
 
 import SwiftUI
+import Combine
 
 struct SearchView: View {
     @StateObject private var dataController = DataController()
@@ -200,6 +201,25 @@ struct SearchView: View {
                     }
                     .background(Color(red: 255/255, green: 239/255, blue: 210/255))
                 }
+                
+                // Floating action button to navigate to RoadMapView
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        NavigationLink(destination: RoadMapView()) {
+                            Image(systemName: "map")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 55, height: 55)
+                                .background(Color(hex: "76A2F9"))
+                                .clipShape(Circle())
+                                .shadow(radius: 4)
+                        }
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 20)
+                }
             }
             .navigationBarHidden(true)
             .background(
@@ -231,3 +251,4 @@ struct SearchView: View {
 #Preview{
     SearchView()
 }
+
