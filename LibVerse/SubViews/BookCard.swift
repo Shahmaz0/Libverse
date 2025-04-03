@@ -61,6 +61,7 @@ struct BookCard: View {
     var deleteAction: (() -> Void)? = nil
     var showDeleteAction: Bool = false
     var dueDate: Date? = nil
+    var returnDate: Date? = nil
     var fine: Float? = nil
     var isLost: Bool = false
     
@@ -77,6 +78,13 @@ struct BookCard: View {
         } else {
             return "\(days) days left to DueDate: \(dueDateStr)"
         }
+    }
+    
+    private var formattedReturnDate: String {
+        guard let returnDate = returnDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        return "Returned on: \(formatter.string(from: returnDate))"
     }
     
     var body: some View {
@@ -117,6 +125,11 @@ struct BookCard: View {
                             .foregroundColor(.red)
                             .fontWeight(.bold)
                             .lineLimit(1)
+                    } else if returnDate != nil {
+                        Text(formattedReturnDate)
+                            .font(.custom("Charter", size: 12))
+                            .foregroundColor(.green)
+                            .lineLimit(1)
                     } else {
                         Text(description)
                             .font(.custom("Charter", size: 12))
@@ -135,6 +148,7 @@ struct BookCard: View {
                         Text("₹\(String(format: "%.2f", fine))")
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.red)
+                            .frame(minWidth: 60, alignment: .trailing)
                     }
                     
                     if showPlusButton {
@@ -146,12 +160,6 @@ struct BookCard: View {
                                 .font(.system(size: 24))
                         }
                         .frame(width: 24, height: 24)
-                    } else if isLost {
-                        Text("Lost")
-                            .font(.custom("Charter", size: 14))
-                            .foregroundColor(.red)
-                            .fontWeight(.bold)
-                            .frame(width: 24, alignment: .center)
                     } else if let menuAction = menuAction {
                         Menu {
                             Button(role: .destructive) {
@@ -179,8 +187,8 @@ struct BookCard: View {
                             .frame(width: 24, height: 24)
                     }
                 }
-                .frame(width: 40)
-                .padding(.trailing, 20)
+                .frame(width: 60)
+                .padding(.trailing, 16)
             }
             .frame(maxWidth: .infinity, maxHeight: 90)
         }

@@ -5,6 +5,7 @@
         case issued = "Issued"
         case returned = "Returned"
         case overdue = "Overdue"
+        case lost = "Lost"
     }
 
     struct BookIssue: Codable, Identifiable {
@@ -155,6 +156,10 @@
                 
             case .returned:
                 // Already returned, no changes needed
+                break
+                
+            case .lost:
+                // Book is lost, no status changes needed
                 break
             }
             

@@ -147,12 +147,12 @@ struct MyBook: View {
         isLoading = true
         
         do {
-            // Fetch currently borrowed books (issued or overdue)
+            // Fetch currently borrowed books (issued, overdue, or lost)
             let activeIssues: [BookIssue] = try await supabaseManager.client
                 .from("BookIssue")
                 .select()
                 .eq("memberId", value: userId)
-                .in("status", values: ["Issued", "Overdue"])
+                .in("status", values: ["Issued", "Overdue", "Lost"])
                 .execute()
                 .value
             
@@ -191,23 +191,84 @@ struct MyBook: View {
         return books
     }
     
+    // MARK: - Update Types
+    private struct BookIssueUpdate: Encodable {
+        let is_lost: Bool
+        let is_paid: Bool
+        let status: String
+        let fine: Float
+    }
     // MARK: - Book Actions
     
     private func markBookAsLost(_ book: Book) async {
         guard let userId = supabaseManager.currentUser?.id else { return }
         
         do {
-            // Update the is_lost status in BookIssue table
-            try await supabaseManager.client
+            // First, get the lost book fine from library policies
+            let policyResponse: [PolicyResponse] = try await supabaseManager.client
+                .from("library_policies")
+                .select()
+                .execute()
+                .value
+            
+            guard let policy = policyResponse.first else {
+                print("Error: Could not fetch library policies")
+                return
+            }
+            
+            let lostBookFine = Float(policy.lost_book_fine)
+            
+            // Get the current fine amount for the book
+            let currentIssueQuery = supabaseManager.client
                 .from("BookIssue")
-                .update(["is_lost": true])
+                .select()
                 .eq("memberId", value: userId)
                 .eq("bookId", value: book.id)
                 .in("status", values: ["Issued", "Overdue"])
-                .execute()
             
-            // Refresh the books list
-            await loadBooks()
+            let currentIssues: [BookIssue] = try await currentIssueQuery.execute().value
+            
+            if let currentIssue = currentIssues.first {
+                let updatedFine = currentIssue.fine + lostBookFine
+                
+                // Create the update parameters using the Encodable struct
+                let updateParams = BookIssueUpdate(
+                    is_lost: true,
+                    is_paid: false,
+                    status: "Lost",
+                    fine: updatedFine
+                )
+                
+                // Update the book issue with all required changes
+                try await supabaseManager.client
+                    .from("BookIssue")
+                    .update(updateParams)
+                    .eq("memberId", value: userId)
+                    .eq("bookId", value: book.id)
+                    .in("status", values: ["Issued", "Overdue"])
+                    .execute()
+                
+                // Update member's fine in the Member table
+                let memberResponse: [Member] = try await supabaseManager.client
+                    .from("Member")
+                    .select()
+                    .eq("id", value: userId)
+                    .execute()
+                    .value
+                
+                if let member = memberResponse.first {
+                    let updatedMemberFine = Float(member.fines) + lostBookFine
+                    
+                    try await supabaseManager.client
+                        .from("Member")
+                        .update(["fine": updatedMemberFine])
+                        .eq("id", value: userId)
+                        .execute()
+                }
+                
+                // Refresh the books list
+                await loadBooks()
+            }
             
             // Clear the selected book
             selectedBook = nil
@@ -263,12 +324,14 @@ struct MyBook: View {
                 ScrollView {
                     VStack(spacing: 16) {
                         ForEach(borrowingHistoryBooks) { book in
+                            let issue = bookIssues.first { $0.bookId == book.id }
                             BookCard(
                                 BookImage: book.imageLink ?? "",
                                 title: book.title,
                                 author: book.author.joined(separator: ", "),
                                 description: book.Description ?? "No description available",
-                                showPlusButton: false
+                                showPlusButton: false,
+                                returnDate: issue?.returnDate
                             )
                         }
                     }
