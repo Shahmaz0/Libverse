@@ -241,7 +241,7 @@ struct MyBook: View {
                                     selectedBook = book
                                     showingLostAlert = true
                                 },
-                                dueDate: issue?.returnDate,
+                                dueDate: issue?.dueDate,
                                 fine: issue?.fine,
                                 isLost: isLost
                             )

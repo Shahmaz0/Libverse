@@ -11,95 +11,109 @@
        let id: UUID
        let bookId: UUID
        let memberId: UUID
-       let issueStatus: IssueStatus
        let issueDate: Date
-       let returnDate: Date
-       let actualReturnDate: Date?
-       let overdueDays: Int?
-       let fine: Float?
-       let isLost: Bool?
+       let dueDate: Date
+       let returnDate: Date?
+       let fine: Float
+       let status: IssueStatus
+       let isOverdue: Bool
+       let isPaid: Bool
+       let isLost: Bool
        
        enum CodingKeys: String, CodingKey {
            case id
            case bookId
            case memberId
-           case issueStatus = "status"
            case issueDate
+           case dueDate
            case returnDate
-           case actualReturnDate
-           case overdueDays
            case fine
+           case status
+           case isOverdue = "is_overdue"
+           case isPaid = "is_paid"
            case isLost = "is_lost"
        }
         
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             
-            let dateFormatter = ISO8601DateFormatter()
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd"  // Format from Supabase date field
+            
+            let iso8601Formatter = ISO8601DateFormatter()
             
             id = try container.decode(UUID.self, forKey: .id)
             bookId = try container.decode(UUID.self, forKey: .bookId)
             memberId = try container.decode(UUID.self, forKey: .memberId)
-            issueStatus = try container.decode(IssueStatus.self, forKey: .issueStatus)
+            status = try container.decode(IssueStatus.self, forKey: .status)
             
             if let issueDateString = try container.decodeIfPresent(String.self, forKey: .issueDate) {
-                issueDate = dateFormatter.date(from: issueDateString) ?? Date()
+                issueDate = dateFormatter.date(from: issueDateString) ?? 
+                           iso8601Formatter.date(from: issueDateString) ?? 
+                           Date()
             } else {
                 issueDate = Date()
             }
             
+            if let dueDateString = try container.decodeIfPresent(String.self, forKey: .dueDate) {
+                dueDate = dateFormatter.date(from: dueDateString) ?? 
+                         iso8601Formatter.date(from: dueDateString) ?? 
+                         Calendar.current.date(byAdding: .day, value: 7, to: issueDate) ?? 
+                         Date()
+            } else {
+                dueDate = Calendar.current.date(byAdding: .day, value: 7, to: issueDate) ?? Date()
+            }
+            
             if let returnDateString = try container.decodeIfPresent(String.self, forKey: .returnDate) {
-                returnDate = dateFormatter.date(from: returnDateString) ?? Date()
+                returnDate = dateFormatter.date(from: returnDateString) ?? 
+                           iso8601Formatter.date(from: returnDateString)
             } else {
-                returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+                returnDate = nil
             }
             
-            if let actualReturnDateString = try container.decodeIfPresent(String.self, forKey: .actualReturnDate) {
-                actualReturnDate = dateFormatter.date(from: actualReturnDateString)
-            } else {
-                actualReturnDate = nil
-            }
-            
-            overdueDays = try container.decodeIfPresent(Int.self, forKey: .overdueDays)
-            fine = try container.decodeIfPresent(Float.self, forKey: .fine)
-            isLost = try container.decodeIfPresent(Bool.self, forKey: .isLost)
+            fine = try container.decode(Float.self, forKey: .fine)
+            isOverdue = try container.decode(Bool.self, forKey: .isOverdue)
+            isPaid = try container.decode(Bool.self, forKey: .isPaid)
+            isLost = try container.decode(Bool.self, forKey: .isLost)
         }
         
         init(bookId: UUID, memberId: UUID) {
             self.id = UUID()
             self.bookId = bookId
             self.memberId = memberId
-            self.issueStatus = .pending
+            self.status = .pending
             self.issueDate = Date()
-            self.returnDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
-            self.actualReturnDate = nil
-            self.overdueDays = nil
-            self.fine = nil
+            self.dueDate = Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date()
+            self.returnDate = nil
+            self.fine = 0.0
+            self.isOverdue = false
+            self.isPaid = true
             self.isLost = false
         }
         
-        init(id: UUID, bookId: UUID, memberId: UUID, issueStatus: IssueStatus, issueDate: Date, returnDate: Date, actualReturnDate: Date?, overdueDays: Int?, isLost: Bool? = false) {
+        init(id: UUID, bookId: UUID, memberId: UUID, issueStatus: IssueStatus, issueDate: Date, returnDate: Date?, overdueDays: Int?, isLost: Bool? = false) {
             self.id = id
             self.bookId = bookId
             self.memberId = memberId
-            self.issueStatus = issueStatus
+            self.status = issueStatus
             self.issueDate = issueDate
+            self.dueDate = Calendar.current.date(byAdding: .day, value: 7, to: issueDate) ?? Date()
             self.returnDate = returnDate
-            self.actualReturnDate = actualReturnDate
-            self.overdueDays = overdueDays
-            self.fine = nil
-            self.isLost = isLost
+            self.fine = 0.0
+            self.isOverdue = false
+            self.isPaid = true
+            self.isLost = isLost ?? false
         }
         
         func calculateOverdueDays() -> Int {
-            guard issueStatus == .overdue else { return 0 }
-            return Calendar.current.dateComponents([.day], from: returnDate, to: Date()).day ?? 0
+            guard status == .overdue else { return 0 }
+            return Calendar.current.dateComponents([.day], from: dueDate, to: Date()).day ?? 0
         }
         
         func updateStatus() -> BookIssue {
             var updatedIssue = self
             
-            switch issueStatus {
+            switch status {
             case .pending:
                 updatedIssue = BookIssue(
                     id: id,
@@ -108,13 +122,12 @@
                     issueStatus: .issued,
                     issueDate: issueDate,
                     returnDate: returnDate,
-                    actualReturnDate: nil,
                     overdueDays: nil,
                     isLost: isLost
                 )
                 
             case .issued:
-                if Date() > returnDate {
+                if Date() > dueDate {
                     updatedIssue = BookIssue(
                         id: id,
                         bookId: bookId,
@@ -122,7 +135,6 @@
                         issueStatus: .overdue,
                         issueDate: issueDate,
                         returnDate: returnDate,
-                        actualReturnDate: nil,
                         overdueDays: calculateOverdueDays(),
                         isLost: isLost
                     )
@@ -137,7 +149,6 @@
                     issueStatus: .overdue,
                     issueDate: issueDate,
                     returnDate: returnDate,
-                    actualReturnDate: nil,
                     overdueDays: calculateOverdueDays(),
                     isLost: isLost
                 )
@@ -158,7 +169,6 @@
                 issueStatus: .returned,
                 issueDate: issueDate,
                 returnDate: returnDate,
-                actualReturnDate: Date(),
                 overdueDays: nil,
                 isLost: isLost
             )

@@ -64,10 +64,19 @@ struct BookCard: View {
     var fine: Float? = nil
     var isLost: Bool = false
     
-    private var daysLeft: String {
+    private var formattedDueDate: String {
         guard let dueDate = dueDate else { return "" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yyyy"
+        let dueDateStr = formatter.string(from: dueDate)
         let days = Calendar.current.dateComponents([.day], from: Date(), to: dueDate).day ?? 0
-        return "\(days) days left"
+        if days < 0 {
+            return "Overdue by \(abs(days)) days, DueDate: \(dueDateStr)"
+        } else if days == 0 {
+            return "Due today, DueDate: \(dueDateStr)"
+        } else {
+            return "\(days) days left to DueDate: \(dueDateStr)"
+        }
     }
     
     var body: some View {
@@ -98,7 +107,7 @@ struct BookCard: View {
                     Spacer().frame(height: 6)
                     
                     if dueDate != nil && !isLost {
-                        Text(daysLeft)
+                        Text(formattedDueDate)
                             .font(.custom("Charter", size: 12))
                             .foregroundColor(.black)
                             .lineLimit(1)

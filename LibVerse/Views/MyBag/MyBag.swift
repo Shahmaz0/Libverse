@@ -441,14 +441,8 @@ class MyBagViewModel: ObservableObject {
                 
                 for book in selectedBooks {
                     let newIssue = BookIssue(
-                        id: issueId, // Same ID for all books in this batch
                         bookId: book.id,
-                        memberId: userId,
-                        issueStatus: .pending,
-                        issueDate: Date(),
-                        returnDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date(),
-                        actualReturnDate: nil,
-                        overdueDays: nil
+                        memberId: userId
                     )
                     
                     try await supabaseManager.client

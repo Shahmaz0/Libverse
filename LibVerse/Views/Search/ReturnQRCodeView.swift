@@ -84,7 +84,7 @@ struct ReturnQRCodeView: View {
                 .eq("id", value: issueId)
             
             let response: [BookIssue] = try await query.execute().value
-            if let issue = response.first, issue.issueStatus == .returned {
+            if let issue = response.first, issue.status == .returned {
                 // Book has been returned, close the view
                 await MainActor.run {
                     presentationMode.wrappedValue.dismiss()
