@@ -3,11 +3,18 @@ import Combine
 
 struct UserProfileView: View {
     @StateObject private var supabaseManager = SupabaseManager.shared
+    @ObservedObject private var localizationManager = LocalizationManager.shared
+    @State private var selectedTab = 0
     @State private var showEditProfile = false
     @State private var showGenrePreferences = false
     @Binding var showMainApp: Bool
     @Binding var showUserInitialView: Bool
     @Environment(\.presentationMode) var presentationMode
+    
+    // Book data states
+    @State private var currentlyBorrowedBooks: [Book] = []
+    @State private var borrowingHistoryBooks: [Book] = []
+    @State private var isLoading = false
     
     var profile: Member? {
         supabaseManager.currentMember
@@ -16,6 +23,11 @@ struct UserProfileView: View {
     init(showMainApp: Binding<Bool>, showUserInitialView: Binding<Bool>) {
         _showMainApp = showMainApp
         _showUserInitialView = showUserInitialView
+        
+        // Customize segmented control appearance
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(Color(red: 255/255, green: 111/255, blue: 45/255))
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.white], for: .selected)
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor.black], for: .normal)
     }
     
     var body: some View {
@@ -25,6 +37,9 @@ struct UserProfileView: View {
                     // Profile Header
                     profileHeader
                     
+                    // Language Selector
+                    LanguageSelector()
+                    
                     // Fines Card
                     finesCard
                     
@@ -33,6 +48,21 @@ struct UserProfileView: View {
                     
                     // Account Details (always visible)
                     accountDetails
+                    
+                    // Tab Picker
+                    tabPicker
+                    
+                    // Content based on selected tab
+                    if isLoading {
+                        ProgressView()
+                            .padding(.vertical, 50)
+                    } else {
+                        if selectedTab == 0 {
+                            currentlyBorrowedBooksList
+                        } else {
+                            borrowingHistoryList
+                        }
+                    }
                 }
                 .padding(.vertical)
                 .padding(.bottom, 80)
@@ -60,7 +90,7 @@ struct UserProfileView: View {
                 }) {
                     HStack {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
-                        Text("Logout")
+                        LocalizedText("logout")
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -75,7 +105,7 @@ struct UserProfileView: View {
             .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         }
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
-        .navigationTitle("Profile")
+        .navigationTitle(localizationManager.localizedString("profile"))
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -86,6 +116,63 @@ struct UserProfileView: View {
         .sheet(isPresented: $showEditProfile) {
             EditProfileView(profile: profile ?? Member(id: UUID(), email: "", firstName: "", lastName: "", enrollmentNumber: nil, fines: 0.0, borrowedBooks: []))
         }
+        .task {
+            await loadBooks()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("LanguageChanged"))) { _ in
+            // Force view refresh when language changes
+        }
+    }
+    
+    // MARK: - Data Loading
+    
+    private func loadBooks() async {
+        guard let userId = supabaseManager.currentUser?.id else { return }
+        
+        isLoading = true
+        
+        do {
+            // Fetch currently borrowed books (issued or overdue)
+            let activeIssues: [BookIssue] = try await supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .in("status", value: ["Issued", "Overdue"])
+                .execute()
+                .value
+            
+            // Fetch borrowing history (returned books)
+            let returnedIssues: [BookIssue] = try await supabaseManager.client
+                .from("BookIssue")
+                .select()
+                .eq("memberId", value: userId)
+                .eq("status", value: "Returned")
+                .execute()
+                .value
+            
+            // Get book details
+            currentlyBorrowedBooks = try await fetchBooks(for: activeIssues)
+            borrowingHistoryBooks = try await fetchBooks(for: returnedIssues)
+            
+        } catch {
+            print("Error loading books: \(error)")
+        }
+        isLoading = false
+    }
+    
+    private func fetchBooks(for issues: [BookIssue]) async throws -> [Book] {
+        guard !issues.isEmpty else { return [] }
+        
+        let bookIds = issues.map { $0.bookId }
+        
+        let books: [Book] = try await supabaseManager.client
+            .from("Books")
+            .select()
+            .in("id", value: bookIds)
+            .execute()
+            .value
+        
+        return books
     }
     
     // MARK: - Subviews
@@ -124,7 +211,7 @@ struct UserProfileView: View {
     
     private var finesCard: some View {
         HStack {
-            Text("Current Fines")
+            LocalizedText("current_fines")
                 .font(.headline)
             
             Spacer()
@@ -149,7 +236,7 @@ struct UserProfileView: View {
                     .font(.title2)
                     .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
                 
-                Text("Library Policies")
+                LocalizedText("library_policies")
                     .font(.headline)
                     .foregroundColor(.primary)
                 
@@ -163,19 +250,71 @@ struct UserProfileView: View {
             .cornerRadius(0)
             .overlay(RoundedRectangle(cornerRadius: 0)
                 .stroke(Color.black, lineWidth: 1.25))
+            .padding(.horizontal)
+        }
+    }
+    
+    private var currentlyBorrowedBooksList: some View {
+        Group {
+            if currentlyBorrowedBooks.isEmpty {
+                LocalizedText("no_books_currently_borrowed")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                ForEach(currentlyBorrowedBooks) { book in
+                    LocalizedBookCard(
+                        bookImage: book.imageLink ?? "",
+                        title: book.title,
+                        author: book.author.joined(separator: ", "),
+                        description: book.Description ?? "No description available",
+                        showPlusButton: false
+                    )
+                    .padding(.horizontal)
+                }
+            }
+        }
+    }
+    
+    private var borrowingHistoryList: some View {
+        Group {
+            if borrowingHistoryBooks.isEmpty {
+                LocalizedText("no_borrowing_history_found")
+                    .foregroundColor(.secondary)
+                    .padding()
+            } else {
+                ForEach(borrowingHistoryBooks) { book in
+                    LocalizedBookCard(
+                        bookImage: book.imageLink ?? "",
+                        title: book.title,
+                        author: book.author.joined(separator: ", "),
+                        description: book.Description ?? "No description available",
+                        showPlusButton: false
+                    )
+                    .padding(.horizontal)
+                }
+            }
         }
     }
     
     private var accountDetails: some View {
         VStack(spacing: 20) {
-            DetailRow(title: "Email", value: profile?.email ?? "N/A")
-            DetailRow(title: "Enrollment Number", value: profile?.enrollmentNumber ?? "N/A")
+            DetailRow(title: localizationManager.localizedString("email"), value: profile?.email ?? localizationManager.localizedString("n_a"))
+            DetailRow(title: localizationManager.localizedString("enrollment_number"), value: profile?.enrollmentNumber ?? localizationManager.localizedString("n_a"))
         }
         .padding()
         .background(Color(red: 255/255, green: 239/255, blue: 210/255))
         .cornerRadius(0)
         .overlay(RoundedRectangle(cornerRadius: 0)
             .stroke(Color.black, lineWidth: 1.25))
+        .padding(.horizontal)
+    }
+    
+    private var tabPicker: some View {
+        Picker("View", selection: $selectedTab) {
+            LocalizedText("currently_borrowed").tag(0)
+            LocalizedText("borrowing_history").tag(1)
+        }
+        .pickerStyle(.segmented)
         .padding(.horizontal)
     }
     
@@ -186,7 +325,7 @@ struct UserProfileView: View {
             HStack(spacing: 2) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 17, weight: .semibold))
-                Text("Back")
+                LocalizedText("back")
                     .fontWeight(.regular)
             }
             .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -212,8 +351,8 @@ struct DetailRow: View {
     }
 }
 
-
 struct EditProfileView: View {
+    @ObservedObject private var localizationManager = LocalizationManager.shared
     let profile: Member
     @Environment(\.dismiss) private var dismiss
     @State private var firstName: String
@@ -253,9 +392,9 @@ struct EditProfileView: View {
                     }
 
                     VStack(spacing: 15) {
-                        EditField(title: "First Name", text: $firstName)
-                        EditField(title: "Last Name", text: $lastName)
-                        EditField(title: "Enrollment Number", text: $enrollmentNumber)
+                        EditField(title: localizationManager.localizedString("first_name"), text: $firstName)
+                        EditField(title: localizationManager.localizedString("last_name"), text: $lastName)
+                        EditField(title: localizationManager.localizedString("enrollment_number"), text: $enrollmentNumber)
                     }
                     .padding()
                     .background(Color(red: 255/255, green: 239/255, blue: 210/255))
@@ -263,7 +402,7 @@ struct EditProfileView: View {
                     .padding(.horizontal)
 
                     Button(action: saveChanges) {
-                        Text("Save Changes")
+                        LocalizedText("save_changes")
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -276,11 +415,11 @@ struct EditProfileView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Edit Profile")
+            .navigationTitle(localizationManager.localizedString("edit_profile"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(localizationManager.localizedString("cancel")) {
                         dismiss()
                     }
                     .foregroundColor(Color(red: 255/255, green: 111/255, blue: 45/255))
@@ -288,7 +427,7 @@ struct EditProfileView: View {
             }
             .alert("Profile Update", isPresented: $showAlert) {
                 Button("OK") {
-                    if alertMessage == "Profile updated successfully!" {
+                    if alertMessage == localizationManager.localizedString("profile_updated_successfully") {
                         dismiss()
                     }
                 }
@@ -312,10 +451,10 @@ struct EditProfileView: View {
                     enrollmentNumber: enrollmentNumber.isEmpty ? nil : enrollmentNumber
                 )
                 
-                alertMessage = "Profile updated successfully!"
+                alertMessage = localizationManager.localizedString("profile_updated_successfully")
                 showAlert = true
             } catch {
-                alertMessage = "Failed to update profile: \(error.localizedDescription)"
+                alertMessage = "\(localizationManager.localizedString("failed_to_update_profile")) \(error.localizedDescription)"
                 showAlert = true
             }
         }
