@@ -45,6 +45,11 @@
 
 /* Announcements */
 "announcements" = "Announcements";
+"error_loading_announcements" = "Error loading announcements";
+"try_again" = "Try Again";
+"no_announcements_available" = "No announcements available";
+"yesterday" = "Yesterday";
+"new" = "New";
 
 /* Genres */
 "technology" = "Technology";
@@ -63,7 +68,7 @@
 "publisher" = "Publisher";
 "released" = "Released";
 "by" = "By:";
-"issue_now" = "Issue Now";
+"issue_now" = "Borrow Now";
 "return" = "Return";
 "account_disabled" = "Your account is currently disabled. Please contact the library admin.";
 "add_to_favourites" = "Add to favourites";

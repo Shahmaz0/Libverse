@@ -12,47 +12,53 @@ struct HeaderView: View {
     @Binding var isEditMode: Bool
     
     var body: some View {
-        Rectangle()
-            .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
-            .frame(maxWidth: .infinity, maxHeight: 60)
-            .overlay(
+        ZStack(alignment: .bottom) {
+            // Background and border
+            VStack(spacing: 0) {
                 Rectangle()
-                    .frame(height: 1.25)
+                    .fill(Color(red: 255/255, green: 239/255, blue: 210/255))
+                    .frame(maxWidth: .infinity, maxHeight: 60)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.top, -1),
+                        alignment: .top
+                    )
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1.25)
+                            .foregroundColor(.black)
+                            .padding(.bottom, -1),
+                        alignment: .bottom
+                    )
+            }
+            
+            // Fixed position title and button
+            HStack {
+                // Title with fixed position
+                Text(title)
+                    .font(.custom("Charter", size: 20))
+                    .bold()
                     .foregroundColor(.black)
-                    .padding(.top, -1),
-                alignment: .top
-            )
-            .overlay(
-                Rectangle()
-                    .frame(height: 1.25)
-                    .foregroundColor(.black)
-                    .padding(.bottom, -1),
-                alignment: .bottom
-            )
-            .overlay(
-                HStack(spacing: 0) {
-                    Text(title)
-                        .font(.custom("Charter", size: 20))
-                        .bold()
-                        .foregroundColor(.black)
-                        .offset(x: isEditMode ? 25 : 0)
-                    
-                    Spacer()
-                    
-                    if showEditButton {
-                        Button(action: {
-                            isEditMode.toggle()
-                        }) {
-                            Text(isEditMode ? "Cancel" : "Edit")
-                                .font(.custom("Charter", size: 16))
-                                .foregroundColor(.black)
-                                .offset(x: isEditMode ? -20 : 0)
-                        }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 40)
+                
+                // Only animate the button text, not its position
+                if showEditButton {
+                    Button(action: {
+                        isEditMode.toggle()
+                    }) {
+                        Text(isEditMode ? "Cancel" : "Edit")
+                            .font(.custom("Charter", size: 16))
+                            .foregroundColor(.black)
                     }
+                    .padding(.trailing, 40)
+                    .animation(nil, value: isEditMode) // Disable animation for the button position
                 }
-                .padding(.horizontal, 16)
-                .animation(.easeIn, value: isEditMode)
-            )
+            }
+            .frame(height: 60)
+        }
     }
 }
 
@@ -64,6 +70,9 @@ struct MyBag: View {
     @State private var showingQRCode = false
     @State private var currentIssueId: UUID?
     @State private var booksToIssue: [Book] = []
+    @State private var showDeleteAlert = false
+    @State private var bookToDelete: UUID?
+    @State private var showDeleteAllAlert = false
     
     var body: some View {
         ZStack {
@@ -99,8 +108,13 @@ struct MyBag: View {
                         VStack(spacing: 1) {
                             ForEach(viewModel.bagBooks, id: \.id) { book in
                                 HStack(spacing: 0) {
-                                    if isEditMode {
-                                        Button(action: {
+                                    BookCard(
+                                        BookImage: book.imageLink ?? "",
+                                        title: book.title,
+                                        author: book.author.joined(separator: ", "),
+                                        description: book.Description ?? "No description available",
+                                        showPlusButton: isEditMode,
+                                        onPlusButtonTapped: {
                                             withAnimation(.easeIn) {
                                                 if selectedBooks.contains(book.id) {
                                                     selectedBooks.remove(book.id)
@@ -108,20 +122,13 @@ struct MyBag: View {
                                                     selectedBooks.insert(book.id)
                                                 }
                                             }
-                                        }) {
-                                            Image(systemName: selectedBooks.contains(book.id) ? "checkmark.circle.fill" : "circle")
-                                                .font(.system(size: 22))
-                                                .foregroundColor(selectedBooks.contains(book.id) ? Color(red: 255/255, green: 111/255, blue: 45/255) : .gray)
-                                                .frame(width: 44, height: 44)
-                                        }
-                                        .padding(.leading, 8)
-                                    }
-                                    
-                                    BookCard(
-                                        BookImage: book.imageLink ?? "",
-                                        title: book.title,
-                                        author: book.author.joined(separator: ", "),
-                                        description: book.Description ?? "No description available"
+                                        },
+                                        isAdded: selectedBooks.contains(book.id),
+                                        deleteAction: {
+                                            bookToDelete = book.id
+                                            showDeleteAlert = true
+                                        },
+                                        showDeleteAction: false
                                     )
                                     .frame(maxWidth: .infinity)
                                 }
@@ -134,45 +141,75 @@ struct MyBag: View {
                 
                 Spacer()
                 
-                // Bottom Button
-                if !isEditMode && !viewModel.bagBooks.isEmpty {
-                    Button(action: {
-                        booksToIssue = viewModel.bagBooks
-                        viewModel.issueAllBooks { issueId in
-                            currentIssueId = issueId
-                            showingQRCode = true
+                // Bottom Buttons
+                HStack(spacing: 10) {
+                    if !isEditMode && !viewModel.bagBooks.isEmpty {
+                        // Only show Borrow All button in non-edit mode
+                        Button(action: {
+                            booksToIssue = viewModel.bagBooks
+                            viewModel.issueAllBooks { issueId in
+                                currentIssueId = issueId
+                                showingQRCode = true
+                            }
+                        }) {
+                            Text("Borrow All")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color(red: 255/255, green: 111/255, blue: 45/255))
+                                .foregroundColor(.white)
+                                .border(.black, width: 1)
+                                .cornerRadius(0)
                         }
-                    }) {
-                        Text("Issue all")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                            .foregroundColor(.white)
-                            .border(.black, width: 1)
-                            .cornerRadius(0)
-                    }
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 30, alignment: .center)
-                    .padding(.bottom, 20)
-                } else {
-                    Button(action: {
-                        booksToIssue = viewModel.bagBooks.filter { selectedBooks.contains($0.id) }
-                        viewModel.issueSelectedBooks(Array(selectedBooks)) { issueId in
-                            currentIssueId = issueId
-                            showingQRCode = true
-                            selectedBooks.removeAll()
+                        .frame(width: UIScreen.main.bounds.width - 32, height: 30, alignment: .center)
+                    } else if isEditMode {
+                        // Delete Selected button in edit mode
+                        Button(action: {
+                            if !selectedBooks.isEmpty {
+                                viewModel.removeSelectedBooks(Array(selectedBooks)) { success in
+                                    if success {
+                                        selectedBooks.removeAll()
+                                        isEditMode = false
+                                    }
+                                }
+                            }
+                        }) {
+                            Text(selectedBooks.isEmpty ? "Delete" : "Delete \(selectedBooks.count)")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(selectedBooks.isEmpty ? Color.gray : Color.red)
+                                .foregroundColor(.white)
+                                .border(.black, width: 1)
+                                .cornerRadius(0)
                         }
-                    }) {
-                        Text(selectedBooks.isEmpty ? "Issue" : "Issue \(selectedBooks.count)")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .foregroundColor(.white)
-                            .background(Color(red: 255/255, green: 111/255, blue: 45/255))
-                            .border(.black, width: 1)
-                            .cornerRadius(0)
+                        .disabled(selectedBooks.isEmpty)
+                        .frame(width: (UIScreen.main.bounds.width - 42) / 2, height: 30, alignment: .center)
+                        
+                        // Issue Selected button in edit mode
+                        Button(action: {
+                            if !selectedBooks.isEmpty {
+                                booksToIssue = viewModel.bagBooks.filter { selectedBooks.contains($0.id) }
+                                viewModel.issueSelectedBooks(Array(selectedBooks)) { issueId in
+                                    currentIssueId = issueId
+                                    showingQRCode = true
+                                    selectedBooks.removeAll()
+                                    isEditMode = false
+                                }
+                            }
+                        }) {
+                            Text(selectedBooks.isEmpty ? "Issue" : "Issue \(selectedBooks.count)")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .foregroundColor(.white)
+                                .background(selectedBooks.isEmpty ? Color.gray : Color(red: 255/255, green: 111/255, blue: 45/255))
+                                .border(.black, width: 1)
+                                .cornerRadius(0)
+                        }
+                        .disabled(selectedBooks.isEmpty)
+                        .frame(width: (UIScreen.main.bounds.width - 42) / 2, height: 30, alignment: .center)
                     }
-                    .frame(width: UIScreen.main.bounds.width - 32, height: 30, alignment: .center)
-                    .padding(.bottom, 20)
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 20)
             }
             .sheet(isPresented: $showingQRCode) {
                 if !booksToIssue.isEmpty, let userId = supabaseManager.currentUser?.id {
@@ -189,6 +226,26 @@ struct MyBag: View {
                         )
                     }
                 }
+            }
+            .alert("Delete Book", isPresented: $showDeleteAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    if let bookId = bookToDelete {
+                        viewModel.removeBookFromBag(bookId) { _ in
+                            bookToDelete = nil
+                        }
+                    }
+                }
+            } message: {
+                Text("Are you sure you want to remove this book from your bag?")
+            }
+            .alert("Delete All Books", isPresented: $showDeleteAllAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete All", role: .destructive) {
+                    viewModel.removeAllBooks { _ in }
+                }
+            } message: {
+                Text("Are you sure you want to remove all books from your bag?")
             }
         }
         .onAppear {
@@ -262,8 +319,78 @@ class MyBagViewModel: ObservableObject {
             }
         }
     }
-
     
+    func removeBookFromBag(_ bookId: UUID, completion: @escaping (Bool) -> Void) {
+        guard let userId = supabaseManager.currentUser?.id else {
+            errorMessage = "You need to be logged in to remove books"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        
+        Task {
+            do {
+                try await supabaseManager.updateMyBag(
+                    userId: userId,
+                    bookId: bookId,
+                    addToBag: false
+                )
+                
+                await MainActor.run {
+                    bagBooks.removeAll { $0.id == bookId }
+                    isLoading = false
+                    completion(true)
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = "Failed to remove book: \(error.localizedDescription)"
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    func removeSelectedBooks(_ selectedIds: [UUID], completion: @escaping (Bool) -> Void) {
+        guard let userId = supabaseManager.currentUser?.id else {
+            errorMessage = "You need to be logged in to remove books"
+            completion(false)
+            return
+        }
+        
+        isLoading = true
+        
+        Task {
+            do {
+                for bookId in selectedIds {
+                    try await supabaseManager.updateMyBag(
+                        userId: userId,
+                        bookId: bookId,
+                        addToBag: false
+                    )
+                }
+                
+                await MainActor.run {
+                    bagBooks.removeAll { selectedIds.contains($0.id) }
+                    isLoading = false
+                    completion(true)
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = "Failed to remove books: \(error.localizedDescription)"
+                    completion(false)
+                }
+            }
+        }
+    }
+    
+    func removeAllBooks(completion: @escaping (Bool) -> Void) {
+        let allBookIds = bagBooks.map { $0.id }
+        removeSelectedBooks(allBookIds, completion: completion)
+    }
+
     func issueSelectedBooks(_ selectedIds: [UUID], completion: @escaping (UUID?) -> Void) {
         guard let userId = supabaseManager.currentUser?.id else {
             errorMessage = "You need to be logged in to issue books"
@@ -314,14 +441,8 @@ class MyBagViewModel: ObservableObject {
                 
                 for book in selectedBooks {
                     let newIssue = BookIssue(
-                        id: issueId, // Same ID for all books in this batch
                         bookId: book.id,
-                        memberId: userId,
-                        issueStatus: .pending,
-                        issueDate: Date(),
-                        returnDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()) ?? Date(),
-                        actualReturnDate: nil,
-                        overdueDays: nil
+                        memberId: userId
                     )
                     
                     try await supabaseManager.client

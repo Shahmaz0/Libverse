@@ -45,6 +45,11 @@
 
 /* Announcements */
 "announcements" = "घोषणाएँ";
+"error_loading_announcements" = "घोषणाएं लोड करने में त्रुटि";
+"try_again" = "पुनः प्रयास करें";
+"no_announcements_available" = "कोई घोषणा उपलब्ध नहीं है";
+"yesterday" = "कल";
+"new" = "नया";
 
 /* Genres */
 "technology" = "प्रौद्योगिकी";
@@ -63,7 +68,7 @@
 "publisher" = "प्रकाशक";
 "released" = "प्रकाशित";
 "by" = "द्वारा:";
-"issue_now" = "अभी जारी करें";
+"issue_now" = "अभी उधार लें";
 "return" = "वापस करें";
 "account_disabled" = "आपका खाता वर्तमान में अक्षम है। कृपया पुस्तकालय प्रशासक से संपर्क करें।";
 "add_to_favourites" = "पसंदीदा में जोड़ें";
