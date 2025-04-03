@@ -58,6 +58,8 @@ struct BookCard: View {
     var onPlusButtonTapped: (() -> Void)? = nil
     var isAdded: Bool = false
     var menuAction: (() -> Void)? = nil
+    var deleteAction: (() -> Void)? = nil
+    var showDeleteAction: Bool = false
     var dueDate: Date? = nil
     var fine: Float? = nil
     var isLost: Bool = false
@@ -79,7 +81,7 @@ struct BookCard: View {
                     BookImageView(url: BookImage)
                 }
                 .frame(width: 44, height: 59)
-                .padding(.leading, 10)
+                .padding(.leading, 20)
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text(title)
@@ -112,7 +114,7 @@ struct BookCard: View {
                             .foregroundColor(.black)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
-                            .frame(width: 265, alignment: .leading)
+                            .frame(width: 240, alignment: .leading)
                     }
                 }
                 .padding(.vertical, 8)
@@ -134,11 +136,13 @@ struct BookCard: View {
                                 .foregroundColor(isAdded ? .green : .black)
                                 .font(.system(size: 24))
                         }
+                        .frame(width: 24, height: 24)
                     } else if isLost {
                         Text("Lost")
                             .font(.custom("Charter", size: 14))
                             .foregroundColor(.red)
                             .fontWeight(.bold)
+                            .frame(width: 24, alignment: .center)
                     } else if let menuAction = menuAction {
                         Menu {
                             Button(role: .destructive) {
@@ -151,13 +155,23 @@ struct BookCard: View {
                                 .foregroundColor(.black)
                                 .font(.system(size: 20))
                         }
+                        .frame(width: 24, height: 24)
+                    } else if showDeleteAction, let deleteAction = deleteAction {
+                        Button(action: deleteAction) {
+                            Image(systemName: "trash.fill")
+                                .foregroundColor(.red)
+                                .font(.system(size: 16))
+                        }
+                        .frame(width: 24, height: 24)
                     } else {
                         Image(systemName: "chevron.right")
                             .foregroundColor(.black)
                             .font(.system(size: 16))
+                            .frame(width: 24, height: 24)
                     }
                 }
-                .padding(.trailing, 8)
+                .frame(width: 40)
+                .padding(.trailing, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: 90)
         }
