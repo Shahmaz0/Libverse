@@ -169,6 +169,11 @@ struct SearchView: View {
                     Spacer()
                     HStack {
                         Spacer()
+                        Text("AI Roadmap")
+                            .font(.custom("charter", size: 20))
+                            .bold()
+                            .foregroundColor(Color(hex: "000000"))
+                            .padding(.trailing, 8)
                         NavigationLink(destination: RoadMapView()) {
                             Image(systemName: "signpost.right.circle.fill")
                                 .font(.title2)
