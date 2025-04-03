@@ -188,7 +188,7 @@ struct HomeView: View {
                 .padding(.vertical)
             }
             .background(Color(red: 255/255, green: 239/255, blue: 210/255).edgesIgnoringSafeArea(.all))
-            .navigationTitle("Madhav")
+            .navigationTitle("Home")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItemGroup(placement: .navigationBarTrailing) {

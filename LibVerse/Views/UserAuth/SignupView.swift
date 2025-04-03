@@ -18,16 +18,6 @@ struct SignUpView: View {
     @State private var navigateToOTP: Bool = false
     @State private var hasSignUpError: Bool = false
     @State private var errorMessage: String = ""
-    
-    // Add bindings for app state
-    @Binding var showMainApp: Bool
-    @Binding var showUserInitialView: Bool
-    
-    // Add initializer with default parameters for preview support
-    init(showMainApp: Binding<Bool> = .constant(false), showUserInitialView: Binding<Bool> = .constant(true)) {
-        self._showMainApp = showMainApp
-        self._showUserInitialView = showUserInitialView
-    }
 
     private func isPasswordValid(_ password: String) -> Bool {
         let hasCapitalLetter = password.contains { $0.isUppercase }
@@ -74,11 +64,11 @@ struct SignUpView: View {
                             .font(.custom("Courier New", size: 25))
                             .bold()
                             .frame(width: 287, alignment: .center)
-                        
-                        Text("Join first to access the feature of Pustakalaya")
-                            .font(.custom("Courier", size: 16))
-                            .frame(width: 350)
-                            .multilineTextAlignment(.center)
+//                        
+//                        Text("Join first to access the feature of Pustakalaya")
+//                            .font(.custom("Courier", size: 16))
+//                            .frame(width: 350)
+//                            .multilineTextAlignment(.center)
                     }
                     
                     Spacer()
